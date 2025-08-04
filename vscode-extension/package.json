@@ -5,6 +5,10 @@
   "version": "1.0.0",
   "publisher": "scubed-solutions",
   "icon": "images/icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/avanishah/scubed-development-process.git"
+  },
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -18,7 +22,7 @@
     "project",
     "requirements",
     "api",
-    "data-pipeline", 
+    "data-pipeline",
     "mobile",
     "claude",
     "ai",
@@ -51,6 +55,11 @@
       {
         "command": "scubed.openTemplateGallery",
         "title": "Open Template Gallery",
+        "category": "S-cubed"
+      },
+      {
+        "command": "scubed.checkForUpdates",
+        "title": "Check for Updates",
         "category": "S-cubed"
       }
     ],
@@ -87,10 +96,35 @@
         "path": "./snippets/project-config.json"
       }
     ],
+    "views": {
+      "scubed-explorer": [
+        {
+          "id": "scubed.projectTemplates",
+          "name": "Project Templates",
+          "when": "true"
+        },
+        {
+          "id": "scubed.quickActions",
+          "name": "Quick Actions",
+          "when": "true"
+        }
+      ]
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "scubed-explorer",
+          "title": "S-cubed",
+          "icon": "$(rocket)"
+        }
+      ]
+    },
     "taskDefinitions": [
       {
         "type": "scubed",
-        "required": ["task"],
+        "required": [
+          "task"
+        ],
         "properties": {
           "task": {
             "type": "string",
@@ -103,7 +137,10 @@
       {
         "name": "scubed-lint",
         "owner": "scubed",
-        "fileLocation": ["relative", "${workspaceFolder}"],
+        "fileLocation": [
+          "relative",
+          "${workspaceFolder}"
+        ],
         "pattern": {
           "regexp": "^(.+):(\\d+):(\\d+):\\s+(warning|error):\\s+(.+)$",
           "file": 1,
@@ -136,6 +173,16 @@
           "type": "boolean",
           "default": true,
           "description": "Enable Microsoft Loop integration features"
+        },
+        "scubed.updateCheckUrl": {
+          "type": "string",
+          "default": "https://github.com/avanishah/scubed-development-process/releases/latest",
+          "description": "URL to check for extension updates"
+        },
+        "scubed.autoCheckUpdates": {
+          "type": "boolean",
+          "default": true,
+          "description": "Automatically check for extension updates on startup"
         }
       }
     }
@@ -146,8 +193,10 @@
     "watch": "tsc -watch -p ./"
   },
   "devDependencies": {
-    "@types/vscode": "^1.74.0",
+    "@types/fs-extra": "^11.0.4",
     "@types/node": "16.x",
+    "@types/vscode": "^1.74.0",
+    "@types/yauzl": "^2.10.3",
     "typescript": "^4.9.4"
   },
   "dependencies": {

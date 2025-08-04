@@ -12,13 +12,29 @@ export function activate(context: vscode.ExtensionContext) {
     const initializeProjectCommand = vscode.commands.registerCommand('scubed.initializeProject', initializeProject);
     const generatePromptsCommand = vscode.commands.registerCommand('scubed.generatePrompts', generatePrompts);
     const openTemplateGalleryCommand = vscode.commands.registerCommand('scubed.openTemplateGallery', openTemplateGallery);
+    const checkForUpdatesCommand = vscode.commands.registerCommand('scubed.checkForUpdates', () => checkForUpdates(context));
+
+    // Register tree data providers for the activity bar views
+    const projectTemplatesProvider = new ProjectTemplatesProvider();
+    const quickActionsProvider = new QuickActionsProvider();
+    
+    vscode.window.registerTreeDataProvider('scubed.projectTemplates', projectTemplatesProvider);
+    vscode.window.registerTreeDataProvider('scubed.quickActions', quickActionsProvider);
 
     context.subscriptions.push(
         createProjectCommand,
         initializeProjectCommand,
         generatePromptsCommand,
-        openTemplateGalleryCommand
+        openTemplateGalleryCommand,
+        checkForUpdatesCommand
     );
+
+    // Check for updates on startup if enabled
+    const autoCheck = vscode.workspace.getConfiguration('scubed').get<boolean>('autoCheckUpdates', true);
+    if (autoCheck) {
+        // Delay the check to avoid startup delays
+        setTimeout(() => checkForUpdates(context, true), 5000);
+    }
 
     // Show welcome message on first install
     const hasShownWelcome = context.globalState.get('scubed.hasShownWelcome', false);
@@ -32,7 +48,7 @@ async function createProject() {
         // Get project details from user
         const projectName = await vscode.window.showInputBox({
             prompt: 'Enter project name',
-            placeholder: 'my-awesome-project',
+            placeHolder: 'my-awesome-project',
             validateInput: (value) => {
                 if (!value || value.trim() === '') {
                     return 'Project name is required';
@@ -140,7 +156,7 @@ async function downloadAndExtractTemplate(projectPath: string, progress: vscode.
     
     // Extract zip file
     return new Promise<void>((resolve, reject) => {
-        yauzl.fromBuffer(zipBuffer, { lazyEntries: true }, (err, zipfile) => {
+        yauzl.fromBuffer(zipBuffer, { lazyEntries: true }, (err: Error | null, zipfile?: yauzl.ZipFile) => {
             if (err) {
                 reject(err);
                 return;
@@ -152,7 +168,7 @@ async function downloadAndExtractTemplate(projectPath: string, progress: vscode.
             }
 
             zipfile.readEntry();
-            zipfile.on('entry', (entry) => {
+            zipfile.on('entry', (entry: yauzl.Entry) => {
                 // Skip directories and unwanted files
                 if (/\/$/.test(entry.fileName) || 
                     entry.fileName.includes('.git/') ||
@@ -176,7 +192,7 @@ async function downloadAndExtractTemplate(projectPath: string, progress: vscode.
                 // Ensure directory exists
                 fs.ensureDirSync(path.dirname(outputPath));
                 
-                zipfile.openReadStream(entry, (err, readStream) => {
+                zipfile.openReadStream(entry, (err: Error | null, readStream?: NodeJS.ReadableStream) => {
                     if (err) {
                         reject(err);
                         return;
@@ -199,7 +215,7 @@ async function downloadAndExtractTemplate(projectPath: string, progress: vscode.
                 resolve();
             });
 
-            zipfile.on('error', (err) => {
+            zipfile.on('error', (err: Error) => {
                 reject(err);
             });
         });
@@ -407,6 +423,327 @@ async function showWelcomeMessage(context: vscode.ExtensionContext) {
             context.globalState.update('scubed.hasShownWelcome', true);
             break;
     }
+}
+
+// Tree Data Providers for Activity Bar Views
+class ProjectTemplatesProvider implements vscode.TreeDataProvider<TemplateItem> {
+    getTreeItem(element: TemplateItem): vscode.TreeItem {
+        return element;
+    }
+
+    getChildren(element?: TemplateItem): Thenable<TemplateItem[]> {
+        if (!element) {
+            return Promise.resolve([
+                new TemplateItem('Requirements Template', 'AI-powered requirements gathering', vscode.TreeItemCollapsibleState.None, {
+                    command: 'scubed.createProject',
+                    title: 'Create Project',
+                    arguments: ['requirements']
+                }),
+                new TemplateItem('API Development', 'REST API development template', vscode.TreeItemCollapsibleState.None, {
+                    command: 'scubed.createProject',
+                    title: 'Create Project',
+                    arguments: ['api']
+                }),
+                new TemplateItem('Data Pipeline', 'Data processing template', vscode.TreeItemCollapsibleState.None, {
+                    command: 'scubed.createProject',
+                    title: 'Create Project',
+                    arguments: ['data']
+                })
+            ]);
+        }
+        return Promise.resolve([]);
+    }
+}
+
+class QuickActionsProvider implements vscode.TreeDataProvider<ActionItem> {
+    getTreeItem(element: ActionItem): vscode.TreeItem {
+        return element;
+    }
+
+    getChildren(element?: ActionItem): Thenable<ActionItem[]> {
+        if (!element) {
+            return Promise.resolve([
+                new ActionItem('Create New Project', '$(add) Create from template', {
+                    command: 'scubed.createProject',
+                    title: 'Create New Project'
+                }),
+                new ActionItem('Initialize Project', '$(folder-opened) Setup current folder', {
+                    command: 'scubed.initializeProject',
+                    title: 'Initialize Project'
+                }),
+                new ActionItem('Generate Prompts', '$(comment-discussion) Create Claude prompts', {
+                    command: 'scubed.generatePrompts',
+                    title: 'Generate Prompts'
+                }),
+                new ActionItem('Template Gallery', '$(library) Browse templates', {
+                    command: 'scubed.openTemplateGallery',
+                    title: 'Open Gallery'
+                }),
+                new ActionItem('Check for Updates', '$(cloud-download) Update extension', {
+                    command: 'scubed.checkForUpdates',
+                    title: 'Check for Updates'
+                })
+            ]);
+        }
+        return Promise.resolve([]);
+    }
+}
+
+class TemplateItem extends vscode.TreeItem {
+    constructor(
+        public readonly label: string,
+        public readonly description: string,
+        public readonly collapsibleState: vscode.TreeItemCollapsibleState,
+        public readonly command?: vscode.Command
+    ) {
+        super(label, collapsibleState);
+        this.tooltip = description;
+        this.description = description;
+        this.iconPath = new vscode.ThemeIcon('file-directory');
+    }
+}
+
+class ActionItem extends vscode.TreeItem {
+    constructor(
+        public readonly label: string,
+        public readonly description: string,
+        public readonly command?: vscode.Command
+    ) {
+        super(label, vscode.TreeItemCollapsibleState.None);
+        this.tooltip = label;
+        this.description = description;
+        this.iconPath = new vscode.ThemeIcon('play');
+    }
+}
+
+// Auto-update functionality
+async function checkForUpdates(context: vscode.ExtensionContext, silent: boolean = false) {
+    try {
+        const config = vscode.workspace.getConfiguration('scubed');
+        const updateUrl = config.get<string>('updateCheckUrl', 'https://github.com/avanishah/scubed-development-process/releases/latest');
+        
+        // Get current extension version
+        const extension = vscode.extensions.getExtension('scubed-solutions.scubed-development-process');
+        const currentVersion = extension?.packageJSON.version || '1.0.0';
+        
+        if (!silent) {
+            vscode.window.showInformationMessage('Checking for S-cubed extension updates...');
+        }
+        
+        // Check for updates timing
+        const lastCheck = context.globalState.get<number>('scubed.lastUpdateCheck', 0);
+        const now = Date.now();
+        const oneDay = 24 * 60 * 60 * 1000;
+        
+        // Only check once per day for silent checks
+        if (silent && (now - lastCheck) < oneDay) {
+            return;
+        }
+        
+        // Update last check time
+        await context.globalState.update('scubed.lastUpdateCheck', now);
+        
+        try {
+            // Check GitHub API for latest release
+            const apiUrl = 'https://api.github.com/repos/avanishah/scubed-development-process/releases/latest';
+            const response = await axios.default.get(apiUrl, {
+                headers: { 'User-Agent': 'S-cubed-Extension' },
+                timeout: 10000
+            });
+            
+            const latestVersion = response.data.tag_name?.replace('v', '') || '1.0.0';
+            const downloadUrl = response.data.assets?.find((asset: any) => asset.name.endsWith('.vsix'))?.browser_download_url;
+            const releaseUrl = response.data.html_url;
+            
+            if (compareVersions(latestVersion, currentVersion) > 0) {
+                // New version available
+                const message = `🚀 S-cubed Extension Update Available!\n\nCurrent: v${currentVersion}\nLatest: v${latestVersion}`;
+                const choice = await vscode.window.showInformationMessage(
+                    message,
+                    'Download Update',
+                    'View Release Notes',
+                    'Install Instructions'
+                );
+                
+                if (choice === 'Download Update' && downloadUrl) {
+                    vscode.env.openExternal(vscode.Uri.parse(downloadUrl));
+                } else if (choice === 'View Release Notes' && releaseUrl) {
+                    vscode.env.openExternal(vscode.Uri.parse(releaseUrl));
+                } else if (choice === 'Install Instructions') {
+                    showUpdateInstructions(latestVersion, downloadUrl);
+                }
+            } else if (!silent) {
+                // Up to date
+                vscode.window.showInformationMessage(
+                    `✅ S-cubed Extension is up to date (v${currentVersion})`
+                );
+            }
+            
+        } catch (apiError) {
+            // Fallback to manual instructions if API fails
+            if (!silent) {
+                const choice = await vscode.window.showWarningMessage(
+                    `Current S-cubed extension version: v${currentVersion}\n\n⚠️ Could not check for updates automatically.\nPlease check GitHub releases manually.`,
+                    'Open GitHub Releases',
+                    'Show Install Instructions'
+                );
+                
+                if (choice === 'Open GitHub Releases') {
+                    vscode.env.openExternal(vscode.Uri.parse(updateUrl));
+                } else if (choice === 'Show Install Instructions') {
+                    showUpdateInstructions();
+                }
+            }
+        }
+        
+    } catch (error) {
+        if (!silent) {
+            vscode.window.showErrorMessage(`Failed to check for updates: ${error}`);
+        }
+    }
+}
+
+// Simple version comparison function
+function compareVersions(a: string, b: string): number {
+    const aParts = a.split('.').map(n => parseInt(n, 10));
+    const bParts = b.split('.').map(n => parseInt(n, 10));
+    
+    for (let i = 0; i < Math.max(aParts.length, bParts.length); i++) {
+        const aPart = aParts[i] || 0;
+        const bPart = bParts[i] || 0;
+        
+        if (aPart > bPart) return 1;
+        if (aPart < bPart) return -1;
+    }
+    
+    return 0;
+}
+
+function showUpdateInstructions(latestVersion?: string, downloadUrl?: string) {
+    const panel = vscode.window.createWebviewPanel(
+        'scubedUpdateInstructions',
+        'S-cubed Extension Update Instructions',
+        vscode.ViewColumn.One,
+        { enableScripts: false }
+    );
+
+    const versionInfo = latestVersion ? `<div class="update-info">
+        <h2>🚀 Update Available: v${latestVersion}</h2>
+        ${downloadUrl ? `<p><strong>Direct Download:</strong> <a href="${downloadUrl}">Download .vsix file</a></p>` : ''}
+    </div>` : '';
+
+    panel.webview.html = `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Update Instructions</title>
+        <style>
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+                padding: 20px;
+                background: var(--vscode-editor-background);
+                color: var(--vscode-editor-foreground);
+                line-height: 1.6;
+            }
+            .update-info {
+                background: var(--vscode-button-background);
+                color: var(--vscode-button-foreground);
+                padding: 15px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+                text-align: center;
+            }
+            .update-info a {
+                color: var(--vscode-button-foreground);
+                text-decoration: underline;
+            }
+            .step {
+                margin: 20px 0;
+                padding: 15px;
+                border: 1px solid var(--vscode-panel-border);
+                border-radius: 8px;
+                background: var(--vscode-sideBar-background);
+            }
+            .step h3 {
+                margin-top: 0;
+                color: var(--vscode-textLink-foreground);
+            }
+            code {
+                background: var(--vscode-textCodeBlock-background);
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-family: 'Consolas', 'Monaco', monospace;
+            }
+            .recommended {
+                background: var(--vscode-inputValidation-infoBackground);
+                border-left: 4px solid var(--vscode-inputValidation-infoBorder);
+                padding: 10px;
+                margin: 15px 0;
+            }
+            .command {
+                background: var(--vscode-textCodeBlock-background);
+                padding: 10px;
+                border-radius: 4px;
+                font-family: 'Consolas', 'Monaco', monospace;
+                margin: 10px 0;
+            }
+        </style>
+    </head>
+    <body>
+        <h1>🔄 S-cubed Extension Update Instructions</h1>
+        
+        ${versionInfo}
+        
+        <div class="recommended">
+            <strong>✨ Recommended:</strong> Use our one-click install script for the easiest experience!
+        </div>
+        
+        <div class="step">
+            <h3>Method 1: One-Click Install Script (Recommended)</h3>
+            <p>Run this command in your terminal:</p>
+            <div class="command">curl -sSL https://raw.githubusercontent.com/avanishah/scubed-development-process/main/install-extension.sh | bash</div>
+            <p>This script will:</p>
+            <ul>
+                <li>Download the latest version automatically</li>
+                <li>Uninstall the old version</li>
+                <li>Install the new version</li>
+                <li>Clean up temporary files</li>
+            </ul>
+        </div>
+        
+        <div class="step">
+            <h3>Method 2: Manual Download & Install</h3>
+            <ol>
+                <li>Visit: <code>https://github.com/avanishah/scubed-development-process/releases/latest</code></li>
+                <li>Download the <code>.vsix</code> file</li>
+                <li>Go to Extensions view (<code>Cmd+Shift+X</code>)</li>
+                <li>Find "S-cubed Development Process" and uninstall it</li>
+                <li>Click "..." → "Install from VSIX..."</li>
+                <li>Select the downloaded file</li>
+                <li>Restart VS Code if prompted</li>
+            </ol>
+        </div>
+        
+        <div class="step">
+            <h3>Method 3: Team Shared Link</h3>
+            <p>Your team lead can share this link for easy access:</p>
+            <div class="command">https://github.com/avanishah/scubed-development-process/releases/latest</div>
+            <p>Everyone can bookmark this link to always get the latest version.</p>
+        </div>
+        
+        <div class="step">
+            <h3>🎉 Benefits of GitHub Releases</h3>
+            <ul>
+                <li><strong>Always Latest:</strong> No more sharing .vsix files manually</li>
+                <li><strong>Version History:</strong> See what's new in each release</li>
+                <li><strong>Team Access:</strong> Everyone gets the same version</li>
+                <li><strong>Automatic Notifications:</strong> Extension checks for updates daily</li>
+            </ul>
+        </div>
+    </body>
+    </html>`;
 }
 
 export function deactivate() {}

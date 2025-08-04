@@ -305,10 +305,10 @@ Use these prompts in sequence with Claude for comprehensive project discovery.
 - Challenge Claude's assumptions and suggestions
 """
     
-    with open("templates/claude-prompts/README.md", "w") as f:
+    # Note: Claude prompts documentation is now in main README.md
         f.write(index_content)
     
-    print("✅ Created: claude-prompts/README.md")
+    print("✅ Claude prompts documented in main README.md")
 
 def main():
     """Generate all discovery prompts"""
@@ -330,7 +330,7 @@ def main():
         print(f"\n✨ Generated {len(prompts)} discovery prompts!")
         print("📁 Location: templates/claude-prompts/")
         print("\n🚀 Next Steps:")
-        print("1. Open templates/claude-prompts/README.md")
+        print("1. Open README.md for Claude prompts documentation")
         print("2. Start with 01_project_scope.md")
         print("3. Use prompts sequentially with Claude")
         print("4. Save outputs to docs/ folders")

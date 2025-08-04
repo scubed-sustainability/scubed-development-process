@@ -1,0 +1,95 @@
+name: Release S-cubed Extension
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.1)'
+        required: true
+        default: '1.0.1'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: vscode-extension/package-lock.json
+          
+      - name: Install dependencies
+        run: |
+          cd vscode-extension
+          npm ci
+          
+      - name: Install vsce
+        run: npm install -g @vscode/vsce
+          
+      - name: Build and package extension
+        run: |
+          cd vscode-extension
+          npm run compile
+          vsce package --allow-star-activation
+          
+      - name: Get package info
+        id: package
+        run: |
+          cd vscode-extension
+          echo "name=$(node -p "require('./package.json').name")" >> $GITHUB_OUTPUT
+          echo "version=$(node -p "require('./package.json').version")" >> $GITHUB_OUTPUT
+          echo "vsix=$(ls *.vsix)" >> $GITHUB_OUTPUT
+          
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            vscode-extension/*.vsix
+          name: "S-cubed Extension v${{ steps.package.outputs.version }}"
+          body: |
+            ## 🚀 S-cubed Development Process Extension v${{ steps.package.outputs.version }}
+            
+            ### Installation Instructions
+            
+            **Method 1: One-Click Install Script**
+            ```bash
+            curl -sSL https://raw.githubusercontent.com/avanishah/scubed-development-process/main/install-extension.sh | bash
+            ```
+            
+            **Method 2: Manual Download & Install**  
+            1. Download the `.vsix` file below
+            2. Open VS Code
+            3. Go to Extensions (`Cmd+Shift+X`)
+            4. Click "..." → "Install from VSIX..."
+            5. Select the downloaded file
+            6. Restart VS Code
+            
+            ### What's New
+            - Activity Bar integration with S-cubed icon
+            - Auto-update checking functionality
+            - Enhanced project templates
+            - Improved Claude integration
+            - Team-friendly distribution via GitHub Releases
+            
+            ### Team Distribution
+            Share this release URL with your team: https://github.com/avanishah/scubed-development-process/releases/latest
+            
+            ---
+            *Generated automatically by GitHub Actions*
+          generate_release_notes: true
+          make_latest: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Update installation script
+        run: |
+          echo "🎉 Extension v${{ steps.package.outputs.version }} released successfully!"
+          echo "📦 VSIX file: ${{ steps.package.outputs.vsix }}"
+          echo "🔗 Release URL: https://github.com/avanishah/scubed-development-process/releases/latest"
