@@ -520,7 +520,7 @@ class ActionItem extends vscode.TreeItem {
 async function checkForUpdates(context: vscode.ExtensionContext, silent: boolean = false) {
     try {
         const config = vscode.workspace.getConfiguration('scubed');
-        const updateUrl = config.get<string>('updateCheckUrl', 'https://github.com/avanishah/scubed-development-process/releases/latest');
+        const updateUrl = config.get<string>('updateCheckUrl', 'https://github.com/scubed-sustainability/scubed-development-process/releases/latest');
         
         // Get current extension version
         const extension = vscode.extensions.getExtension('scubed-solutions.scubed-development-process');
@@ -545,7 +545,7 @@ async function checkForUpdates(context: vscode.ExtensionContext, silent: boolean
         
         try {
             // Check GitHub API for latest release
-            const apiUrl = 'https://api.github.com/repos/avanishah/scubed-development-process/releases/latest';
+            const apiUrl = 'https://api.github.com/repos/scubed-sustainability/scubed-development-process/releases/latest';
             const response = await axios.default.get(apiUrl, {
                 headers: { 'User-Agent': 'S-cubed-Extension' },
                 timeout: 10000

@@ -285,6 +285,11 @@ We welcome contributions to the S-cubed Development Process!
 - 📋 Advanced AI Workflows
 - 📋 Custom Template Builder
 - 📋 Enterprise Features
+- 📋 **VS Code Marketplace Publishing** - Make extension searchable in VS Code (pending management approval)
+  - Automatic updates via VS Code
+  - Search discovery like other extensions
+  - Broader community access
+  - Professional marketplace presence
 
 ## 📈 Changelog
 

@@ -176,7 +176,7 @@
         },
         "scubed.updateCheckUrl": {
           "type": "string",
-          "default": "https://github.com/avanishah/scubed-development-process/releases/latest",
+          "default": "https://github.com/scubed-sustainability/scubed-development-process/releases/latest",
           "description": "URL to check for extension updates"
         },
         "scubed.autoCheckUpdates": {

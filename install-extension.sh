@@ -4,7 +4,7 @@
 
 set -e
 
-REPO="avanishah/scubed-development-process"
+REPO="scubed-sustainability/scubed-development-process"
 EXTENSION_NAME="scubed-development-process"
 
 echo "🚀 Installing S-cubed Extension..."
