@@ -11,6 +11,10 @@ on:
         required: true
         default: '1.0.1'
 
+permissions:
+  contents: write
+  packages: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -22,13 +26,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '18'
-          cache: 'npm'
-          cache-dependency-path: vscode-extension/package-lock.json
           
       - name: Install dependencies
         run: |
           cd vscode-extension
-          npm ci
+          npm install
           
       - name: Install vsce
         run: npm install -g @vscode/vsce
@@ -60,7 +62,7 @@ jobs:
             
             **Method 1: One-Click Install Script**
             ```bash
-            curl -sSL https://raw.githubusercontent.com/avanishah/scubed-development-process/main/install-extension.sh | bash
+            curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-development-process/main/install-extension.sh | bash
             ```
             
             **Method 2: Manual Download & Install**  
@@ -79,7 +81,7 @@ jobs:
             - Team-friendly distribution via GitHub Releases
             
             ### Team Distribution
-            Share this release URL with your team: https://github.com/avanishah/scubed-development-process/releases/latest
+            Share this release URL with your team: https://github.com/scubed-sustainability/scubed-development-process/releases/latest
             
             ---
             *Generated automatically by GitHub Actions*
@@ -88,8 +90,8 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           
-      - name: Update installation script
+      - name: Summary
         run: |
           echo "🎉 Extension v${{ steps.package.outputs.version }} released successfully!"
           echo "📦 VSIX file: ${{ steps.package.outputs.vsix }}"
-          echo "🔗 Release URL: https://github.com/avanishah/scubed-development-process/releases/latest"
+          echo "🔗 Release URL: https://github.com/scubed-sustainability/scubed-development-process/releases/latest"
