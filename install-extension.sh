@@ -34,3 +34,8 @@ rm "/tmp/$EXTENSION_NAME.vsix"
 
 echo "✅ S-cubed Extension $VERSION installed successfully!"
 echo "🔄 Restart VS Code to activate the extension"
+echo ""
+echo "💡 Pro Tip: Bookmark this command for easy updates:"
+echo "   curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-development-process/main/install-extension.sh | bash"
+echo ""
+echo "📝 Or save this as 'update-scubed.sh' and run it anytime to get the latest version!"

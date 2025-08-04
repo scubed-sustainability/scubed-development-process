@@ -560,12 +560,19 @@ async function checkForUpdates(context: vscode.ExtensionContext, silent: boolean
                 const message = `🚀 S-cubed Extension Update Available!\n\nCurrent: v${currentVersion}\nLatest: v${latestVersion}`;
                 const choice = await vscode.window.showInformationMessage(
                     message,
-                    'Download Update',
+                    'One-Click Update',
+                    'Download Manually', 
                     'View Release Notes',
                     'Install Instructions'
                 );
                 
-                if (choice === 'Download Update' && downloadUrl) {
+                if (choice === 'One-Click Update') {
+                    // Show terminal command for easy update
+                    const terminal = vscode.window.createTerminal('S-cubed Update');
+                    terminal.sendText('curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-development-process/main/install-extension.sh | bash');
+                    terminal.show();
+                    vscode.window.showInformationMessage('🚀 Update command sent to terminal! Press Enter to run it.');
+                } else if (choice === 'Download Manually' && downloadUrl) {
                     vscode.env.openExternal(vscode.Uri.parse(downloadUrl));
                 } else if (choice === 'View Release Notes' && releaseUrl) {
                     vscode.env.openExternal(vscode.Uri.parse(releaseUrl));
