@@ -7,7 +7,7 @@
   "icon": "images/icon.png",
   "repository": {
     "type": "git",
-    "url": "https://github.com/avanishah/scubed-development-process.git"
+    "url": "https://github.com/scubed-sustainability/scubed-development-process.git"
   },
   "engines": {
     "vscode": "^1.74.0"
@@ -115,7 +115,7 @@
         {
           "id": "scubed-explorer",
           "title": "S-cubed",
-          "icon": "$(rocket)"
+          "icon": "$(primitive-square)"
         }
       ]
     },

@@ -2,7 +2,7 @@
 
 A comprehensive, AI-powered development process with integrated templates, workflows, and automation tools for modern software development teams.
 
-## 🚀 Overview
+## 🟧 Overview
 
 The S-cubed Development Process provides a complete toolkit for AI-enabled software development, featuring:
 
@@ -17,12 +17,22 @@ The S-cubed Development Process provides a complete toolkit for AI-enabled softw
 ### 1. Install the S-cubed Extension
 
 #### Method 1: One-Click Install Script (Recommended)
+
+**Prerequisites**: VS Code CLI must be installed first.
+
+**Install VS Code CLI:**
+1. Open VS Code
+2. Open Command Palette (`Cmd+Shift+P` or `Ctrl+Shift+P`)
+3. Run: **"Shell Command: Install 'code' command in PATH"**
+4. Restart your terminal
+
+**Install S-cubed Extension:**
 ```bash
-curl -sSL https://raw.githubusercontent.com/avanishah/scubed-development-process/main/install-extension.sh | bash
+curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-development-process/main/install-extension.sh | bash
 ```
 
 #### Method 2: Manual Installation from GitHub Releases
-1. Visit: https://github.com/avanishah/scubed-development-process/releases/latest
+1. Visit: https://github.com/scubed-sustainability/scubed-development-process/releases/latest
 2. Download the `.vsix` file
 3. Open VS Code → Extensions (`Ctrl+Shift+X` or `Cmd+Shift+X`)
 4. Click "..." → "Install from VSIX..."
@@ -39,7 +49,7 @@ curl -sSL https://raw.githubusercontent.com/avanishah/scubed-development-process
 # Extensions → Install from VSIX... → Select generated .vsix file
 ```
 
-📋 **For Teams**: See [TEAM-INSTALLATION.md](TEAM-INSTALLATION.md) for detailed team distribution guide.
+📋 **For Teams**: See [Team Distribution](#-team-distribution) section below for team deployment guidance.
 
 ### 2. Create Your First Project
 
@@ -60,7 +70,7 @@ After installation, you should see "S-cubed Development Process" in your Extensi
 - **S-cubed: Generate Discovery Prompts** - Create tailored Claude prompts
 - **S-cubed: Open Template Gallery** - Browse available templates
 
-### 🚀 One-Click Project Creation
+### 🟧 One-Click Project Creation
 - **Create New Project from Template**: Instantly set up a new project with the complete S-cubed template structure
 - **Smart Project Initialization**: Automatic configuration and setup based on your project details
 - **Template Gallery**: Choose from multiple project templates (AI-enabled, minimal, enterprise)
@@ -204,11 +214,48 @@ scubed-development-process/
 
 ## 📦 Team Distribution
 
-### Sharing with Your Team
+### Quick Team Setup
 
-1. **Share the .vsix file**: Send `scubed-development-process-1.0.0.vsix` to team members
-2. **Provide installation instructions**: Share the installation section above
-3. **Configure settings**: Help team members set up their preferred configuration
+**Share this repository link**: https://github.com/scubed-sustainability/scubed-development-process/releases/latest
+
+### Installation Methods for Teams
+
+#### Option 1: One-Click Install (Recommended for All Team Members)
+
+**Prerequisites**: Each team member needs VS Code CLI installed.
+
+**VS Code CLI Setup (One-time per team member):**
+1. Open VS Code
+2. Command Palette (`Cmd+Shift+P` or `Ctrl+Shift+P`)
+3. Run: **"Shell Command: Install 'code' command in PATH"**
+4. Restart terminal
+
+**Install S-cubed Extension:**
+```bash
+curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-development-process/main/install-extension.sh | bash
+```
+
+#### Option 2: Manual Distribution
+1. Download `.vsix` from [releases page](https://github.com/scubed-sustainability/scubed-development-process/releases/latest)
+2. Share file with team members
+3. Each member: VS Code → Extensions → "..." → "Install from VSIX..."
+
+### Team Verification Steps
+1. **Check Extensions**: Look for "S-cubed Development Process" in Extensions view
+2. **Find Activity Bar Icon**: Look for 🟧 S-cubed icon in left sidebar
+3. **Test Commands**: `Cmd+Shift+P` → type "S-cubed" to see available commands
+
+### Keeping Team Updated
+
+#### Automatic Updates
+- Extension checks for updates daily
+- Team members get notifications when new versions are available
+- Run: **"S-cubed: Check for Updates"** in Command Palette
+
+#### Update Process
+1. Click **"Download Update"** when notified
+2. Use installation methods above
+3. Or re-run the one-click install script
 
 ### Extension Package Details
 
@@ -216,6 +263,7 @@ scubed-development-process/
 - **Files Included**: 454 files (TypeScript compiled to JavaScript)
 - **Version**: 1.0.0
 - **Publisher**: scubed-solutions
+- **Latest Release**: https://github.com/scubed-sustainability/scubed-development-process/releases/latest
 
 ## 🛠️ Troubleshooting
 
@@ -307,7 +355,7 @@ We welcome contributions to the S-cubed Development Process!
 
 ---
 
-## 🚀 Ready to Transform Your Development Process!
+## 🟧 Ready to Transform Your Development Process!
 
 Start with the S-cubed extension and experience AI-powered development. Build better software, faster, with structured workflows and intelligent automation.
 
