@@ -56,7 +56,7 @@ jobs:
             vscode-extension/*.vsix
           name: "S-cubed Extension v${{ steps.package.outputs.version }}"
           body: |
-            ## 🚀 S-cubed Development Process Extension v${{ steps.package.outputs.version }}
+            ## 🟧 S-cubed Development Process Extension v${{ steps.package.outputs.version }}
             
             ### Installation Instructions
             
