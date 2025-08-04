@@ -1,0 +1,70 @@
+{
+  "discoveryPrompts": {
+    "businessRequirements": {
+      "title": "Business Requirements Discovery",
+      "description": "Comprehensive business requirements gathering prompt",
+      "prompt": "I'm working on a new project and need help with business requirements discovery. Here's the context:\n\n**Project**: {projectName}\n**Domain**: {domain}\n**Stakeholders**: {stakeholders}\n\nPlease help me discover:\n\n1. **Business Objectives**\n   - What are the primary business goals?\n   - What problems are we solving?\n   - What success metrics should we track?\n\n2. **User Needs**\n   - Who are the primary users/customers?\n   - What are their pain points?\n   - What workflows do they currently use?\n\n3. **Business Rules**\n   - What business rules must be enforced?\n   - Are there regulatory/compliance requirements?\n   - What are the business constraints?\n\n4. **Stakeholder Analysis**\n   - Who are the key decision makers?\n   - What are their concerns/requirements?\n   - How should we manage stakeholder communication?\n\nPlease provide structured questions I should ask and suggest a discovery session agenda.",
+      "variables": ["projectName", "domain", "stakeholders"],
+      "expectedOutputs": [
+        "Business objectives analysis",
+        "User persona definitions",
+        "Business rules documentation",
+        "Stakeholder analysis matrix",
+        "Discovery session agenda"
+      ]
+    },
+    "technicalArchitecture": {
+      "title": "Technical Architecture Discovery",
+      "description": "Technical architecture and system design discovery",
+      "prompt": "I need help designing the technical architecture for a new system. Here's what I know:\n\n**System**: {systemName}\n**Scale**: {expectedScale}\n**Technologies**: {preferredTechnologies}\n**Constraints**: {constraints}\n\nPlease help me explore:\n\n1. **System Architecture**\n   - What architectural patterns should we consider?\n   - How should we structure the system components?\n   - What are the scalability considerations?\n\n2. **Technology Stack**\n   - What technologies are best suited for our requirements?\n   - How do we evaluate different options?\n   - What are the trade-offs?\n\n3. **Data Architecture**\n   - How should we structure and store data?\n   - What are the data flow patterns?\n   - How do we ensure data consistency and integrity?\n\n4. **Security & Compliance**\n   - What security measures are required?\n   - How do we handle authentication and authorization?\n   - What compliance requirements must we meet?\n\n5. **Integration Points**\n   - What external systems do we need to integrate with?\n   - What APIs or data feeds are required?\n   - How do we handle third-party dependencies?\n\nPlease provide architectural recommendations and help me create architecture decision records (ADRs).",
+      "variables": ["systemName", "expectedScale", "preferredTechnologies", "constraints"],
+      "expectedOutputs": [
+        "System architecture diagram",
+        "Technology recommendations",
+        "Data architecture design",
+        "Security architecture",
+        "Integration specifications",
+        "Architecture Decision Records"
+      ]
+    },
+    "userExperience": {
+      "title": "User Experience Discovery",
+      "description": "User experience and interface design discovery",
+      "prompt": "I'm designing the user experience for a new application. Here's the context:\n\n**Application**: {appName}\n**Users**: {userTypes}\n**Platform**: {platform}\n**Key Features**: {keyFeatures}\n\nPlease help me discover:\n\n1. **User Journey Mapping**\n   - What are the primary user journeys?\n   - Where are the pain points in current processes?\n   - How can we optimize the user flow?\n\n2. **Interface Design**\n   - What UI patterns work best for our users?\n   - How should we organize information?\n   - What accessibility requirements should we consider?\n\n3. **Interaction Design**\n   - How should users interact with key features?\n   - What feedback mechanisms do we need?\n   - How do we handle error states?\n\n4. **Information Architecture**\n   - How should we structure and organize content?\n   - What navigation patterns work best?\n   - How do we handle search and filtering?\n\n5. **Performance & Usability**\n   - What are the performance expectations?\n   - How do we measure usability?\n   - What testing methods should we use?\n\nPlease provide UX recommendations and help me create user stories with acceptance criteria.",
+      "variables": ["appName", "userTypes", "platform", "keyFeatures"],
+      "expectedOutputs": [
+        "User journey maps",
+        "Wireframes and mockups",
+        "Interaction specifications",
+        "Information architecture",
+        "User stories with acceptance criteria",
+        "Usability testing plan"
+      ]
+    },
+    "dataRequirements": {
+      "title": "Data Requirements Discovery",
+      "description": "Data modeling and requirements discovery",
+      "prompt": "I'm working on defining data requirements for a new system. Here's the context:\n\n**System**: {systemName}\n**Data Sources**: {dataSources}\n**Data Volume**: {expectedVolume}\n**Use Cases**: {primaryUseCases}\n\nPlease help me discover:\n\n1. **Data Modeling**\n   - What entities and relationships do we need to model?\n   - How should we structure the data schema?\n   - What are the data validation requirements?\n\n2. **Data Sources & Integration**\n   - What data sources do we need to connect to?\n   - How do we handle data synchronization?\n   - What are the data quality requirements?\n\n3. **Data Processing**\n   - What data transformations are required?\n   - How do we handle real-time vs batch processing?\n   - What are the performance requirements?\n\n4. **Data Governance**\n   - What data privacy requirements must we meet?\n   - How do we handle data retention and archival?\n   - What audit and compliance needs do we have?\n\n5. **Analytics & Reporting**\n   - What insights do users need from the data?\n   - What reporting capabilities are required?\n   - How do we handle data visualization?\n\nPlease provide data architecture recommendations and help me create data flow diagrams.",
+      "variables": ["systemName", "dataSources", "expectedVolume", "primaryUseCases"],
+      "expectedOutputs": [
+        "Data model diagrams",
+        "Data flow specifications",
+        "Integration requirements",
+        "Data governance policies",
+        "Analytics requirements",
+        "Performance specifications"
+      ]
+    }
+  },
+  "promptTemplates": {
+    "generic": "I'm working on {projectType} and need help with {discoveryArea}. Here's the context:\n\n**Project**: {projectName}\n**Context**: {projectContext}\n**Constraints**: {constraints}\n\nPlease help me explore {specificQuestions} and provide structured recommendations.",
+    "followUp": "Based on our previous discussion about {topic}, I'd like to dive deeper into {specificArea}. Can you help me explore {detailedQuestions} and provide actionable next steps?",
+    "validation": "I've drafted the following {documentType} for {projectName}. Can you review it and provide feedback on:\n\n1. Completeness - are there missing elements?\n2. Clarity - is it clear and understandable?\n3. Feasibility - are the requirements realistic?\n4. Consistency - are there any contradictions?\n\n{documentContent}"
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2024-01-01",
+    "author": "S-cubed Solutions",
+    "tags": ["discovery", "requirements", "architecture", "ux", "data"]
+  }
+}

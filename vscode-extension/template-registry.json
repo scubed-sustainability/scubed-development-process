@@ -1,0 +1,173 @@
+{
+  "templates": [
+    {
+      "id": "requirements-template",
+      "name": "Requirements & Discovery Template",
+      "description": "AI-powered requirements gathering and discovery with Claude integration and Microsoft Loop collaboration",
+      "category": "requirements",
+      "version": "1.0.0",
+      "author": "S-cubed Solutions",
+      "tags": ["requirements", "discovery", "claude", "loop", "documentation"],
+      "icon": "📋",
+      "featured": true,
+      "difficulty": "beginner",
+      "estimatedTime": "15 minutes",
+      "sourceUrl": "https://github.com/scubed-solutions/scubed-development-process/templates/requirements-template",
+      "downloadUrl": "https://github.com/scubed-solutions/scubed-development-process/archive/refs/heads/main.zip",
+      "features": [
+        "Structured Claude discovery prompts",
+        "Microsoft Loop integration",
+        "Automated documentation workflows",
+        "Stakeholder collaboration tools",
+        "Rich snippet library",
+        "Project initialization scripts"
+      ],
+      "prerequisites": [
+        "VS Code 1.74.0+",
+        "Python 3.7+ (for automation scripts)",
+        "Git"
+      ],
+      "structure": {
+        "docs": "All project documentation",
+        "scripts": "Automation and initialization scripts",
+        "templates": "Reusable templates and prompts",
+        "CLAUDE.md": "AI context and project notes",
+        "project.json": "Project metadata and configuration"
+      },
+      "snippets": [
+        {
+          "prefix": "claude-discovery",
+          "description": "Discovery prompt template"
+        },
+        {
+          "prefix": "user-story",
+          "description": "User story format with acceptance criteria"
+        },
+        {
+          "prefix": "adr",
+          "description": "Architecture Decision Record"
+        },
+        {
+          "prefix": "requirements-doc",
+          "description": "Comprehensive requirements document"
+        }
+      ]
+    },
+    {
+      "id": "api-development",
+      "name": "API Development Template",
+      "description": "REST API and microservices development with OpenAPI, testing frameworks, and cloud deployment",
+      "category": "development",
+      "version": "1.0.0",
+      "author": "S-cubed Solutions",
+      "tags": ["api", "rest", "microservices", "openapi", "docker", "cloud"],
+      "icon": "🚀",
+      "featured": true,
+      "difficulty": "intermediate",
+      "estimatedTime": "20 minutes",
+      "status": "coming-soon",
+      "features": [
+        "OpenAPI/Swagger integration",
+        "API testing frameworks (Jest, Postman)",
+        "Docker deployment configurations",
+        "Database schema management",
+        "Authentication & authorization",
+        "API monitoring and logging"
+      ],
+      "prerequisites": [
+        "Node.js 16+ or Python 3.8+",
+        "Docker",
+        "Database system (PostgreSQL/MongoDB)"
+      ]
+    },
+    {
+      "id": "data-pipeline",
+      "name": "Data Pipeline Template",
+      "description": "Data processing, ETL, and analytics with Apache Airflow, cloud deployment, and monitoring",
+      "category": "data",
+      "version": "1.0.0",
+      "author": "S-cubed Solutions",
+      "tags": ["data", "etl", "pipeline", "airflow", "analytics", "cloud"],
+      "icon": "📊",
+      "featured": true,
+      "difficulty": "advanced",
+      "estimatedTime": "30 minutes",
+      "status": "coming-soon",
+      "features": [
+        "Apache Airflow workflows",
+        "Data validation frameworks",
+        "Cloud deployment (Azure/AWS)",
+        "Monitoring and alerting",
+        "Data quality checks",
+        "Automated testing"
+      ],
+      "prerequisites": [
+        "Python 3.8+",
+        "Docker",
+        "Cloud account (Azure/AWS)",
+        "Database knowledge"
+      ]
+    },
+    {
+      "id": "mobile-app",
+      "name": "Mobile App Template",
+      "description": "React Native and hybrid mobile application development with CI/CD and app store deployment",
+      "category": "mobile",
+      "version": "1.0.0",
+      "author": "S-cubed Solutions",
+      "tags": ["mobile", "react-native", "ios", "android", "ci-cd"],
+      "icon": "📱",
+      "featured": false,
+      "difficulty": "intermediate",
+      "estimatedTime": "25 minutes",
+      "status": "coming-soon",
+      "features": [
+        "Cross-platform React Native setup",
+        "CI/CD for mobile platforms",
+        "App store deployment automation",
+        "Performance monitoring",
+        "Push notifications",
+        "Analytics integration"
+      ],
+      "prerequisites": [
+        "Node.js 16+",
+        "React Native CLI",
+        "Xcode (for iOS)",
+        "Android Studio (for Android)"
+      ]
+    }
+  ],
+  "categories": [
+    {
+      "id": "requirements",
+      "name": "Requirements & Discovery",
+      "description": "Templates for requirements gathering, discovery, and documentation",
+      "icon": "📋"
+    },
+    {
+      "id": "development",
+      "name": "Application Development",
+      "description": "Templates for building applications and services",
+      "icon": "🚀"
+    },
+    {
+      "id": "data",
+      "name": "Data & Analytics",
+      "description": "Templates for data processing, pipelines, and analytics",
+      "icon": "📊"
+    },
+    {
+      "id": "mobile",
+      "name": "Mobile Development",
+      "description": "Templates for mobile and cross-platform applications",
+      "icon": "📱"
+    }
+  ],
+  "metadata": {
+    "version": "1.0.0",
+    "lastUpdated": "2024-01-01",
+    "totalTemplates": 4,
+    "availableTemplates": 1,
+    "comingSoonTemplates": 3
+  }
+}
