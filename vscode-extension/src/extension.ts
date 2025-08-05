@@ -143,7 +143,7 @@ async function createProject() {
 
 async function downloadAndExtractTemplate(projectPath: string, progress: vscode.Progress<{ increment?: number; message?: string }>) {
     const config = vscode.workspace.getConfiguration('scubed');
-    const templateSource = config.get<string>('templateSource') || 'https://github.com/your-org/requirements-template/archive/refs/heads/main.zip';
+    const templateSource = config.get<string>('templateSource') || 'https://github.com/scubed-sustainability/scubed-development-process/archive/refs/heads/main.zip';
     
     // Create project directory
     await fs.ensureDir(projectPath);
@@ -417,7 +417,7 @@ async function showWelcomeMessage(context: vscode.ExtensionContext) {
             await createProject();
             break;
         case 'View Documentation':
-            vscode.env.openExternal(vscode.Uri.parse('https://github.com/your-org/requirements-template'));
+            vscode.env.openExternal(vscode.Uri.parse('https://github.com/scubed-sustainability/scubed-development-process'));
             break;
         case "Don't Show Again":
             context.globalState.update('scubed.hasShownWelcome', true);
@@ -723,7 +723,7 @@ function showUpdateInstructions(latestVersion?: string, downloadUrl?: string) {
         <div class="step">
             <h3>Method 2: Manual Download & Install</h3>
             <ol>
-                <li>Visit: <code>https://github.com/avanishah/scubed-development-process/releases/latest</code></li>
+                <li>Visit: <code>https://github.com/scubed-sustainability/scubed-development-process/releases/latest</code></li>
                 <li>Download the <code>.vsix</code> file</li>
                 <li>Go to Extensions view (<code>Cmd+Shift+X</code>)</li>
                 <li>Find "S-cubed Development Process" and uninstall it</li>
@@ -736,7 +736,7 @@ function showUpdateInstructions(latestVersion?: string, downloadUrl?: string) {
         <div class="step">
             <h3>Method 3: Team Shared Link</h3>
             <p>Your team lead can share this link for easy access:</p>
-            <div class="command">https://github.com/avanishah/scubed-development-process/releases/latest</div>
+            <div class="command">https://github.com/scubed-sustainability/scubed-development-process/releases/latest</div>
             <p>Everyone can bookmark this link to always get the latest version.</p>
         </div>
         

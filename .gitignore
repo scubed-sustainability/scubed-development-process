@@ -4,6 +4,10 @@ vscode-extension/node_modules/
 vscode-extension/out/
 vscode-extension/*.vsix
 
+# Build artifacts
+*.vsix
+**/out/
+
 # System files
 .DS_Store
 Thumbs.db

@@ -156,7 +156,7 @@
       "properties": {
         "scubed.templateSource": {
           "type": "string",
-          "default": "https://github.com/your-org/requirements-template/archive/refs/heads/main.zip",
+          "default": "https://github.com/scubed-sustainability/scubed-development-process/archive/refs/heads/main.zip",
           "description": "URL to the requirements template archive"
         },
         "scubed.defaultProjectPath": {
