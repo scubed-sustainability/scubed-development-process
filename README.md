@@ -17,7 +17,7 @@ curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-develop
 
 ### 3. Automated Releases
 ```bash
-./release.sh patch "Your commit message"   # One command = commit + version + release
+./scripts/release.sh patch "Your commit message"   # One command = commit + version + release
 ```
 
 ---
@@ -68,8 +68,8 @@ curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-develop
 
 ## Method 3: Build from Source
 ```bash
-./build-extension.sh        # Linux/Mac
-.\build-extension.ps1       # Windows
+./scripts/build-extension.sh        # Linux/Mac
+.\scripts\build-extension.ps1       # Windows
 ```
 
 # 👥 Team Distribution
@@ -119,9 +119,9 @@ curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-develop
 
 ```bash
 # Automated release (handles everything!)
-./release.sh patch "Fix activity bar icon display"   # 1.0.7 → 1.0.8
-./release.sh minor "Add new template features"       # 1.0.7 → 1.1.0  
-./release.sh major "Breaking API changes"            # 1.0.7 → 2.0.0
+./scripts/release.sh patch "Fix activity bar icon display"   # 1.0.7 → 1.0.8
+./scripts/release.sh minor "Add new template features"       # 1.0.7 → 1.1.0  
+./scripts/release.sh major "Breaking API changes"            # 1.0.7 → 2.0.0
 
 # Or using npm scripts from vscode-extension directory
 cd vscode-extension
@@ -160,7 +160,7 @@ npm run release:major   # Quick major release
 cd vscode-extension && npm run sync-version
 
 # Build with auto-sync  
-./build-extension.sh
+./scripts/build-extension.sh
 ```
 
 ---
@@ -243,8 +243,8 @@ Configure the extension in VS Code settings:
 
 ```bash
 # Build the extension
-./build-extension.sh        # Linux/Mac
-.\build-extension.ps1       # Windows
+./scripts/build-extension.sh        # Linux/Mac
+.\scripts\build-extension.ps1       # Windows
 
 # Install in VS Code
 # Extensions → Install from VSIX... → Select generated .vsix file
@@ -257,8 +257,11 @@ Configure the extension in VS Code settings:
 ```
 scubed-development-process/
 ├── 📄 README.md                     # This comprehensive guide
-├── 📄 release.sh                    # Automated release script
-├── 📄 build-extension.sh/.ps1       # Extension build scripts
+├── 📁 scripts/                      # Build and deployment scripts
+│   ├── 📄 release.sh                # Automated release script
+│   ├── 📄 build-extension.sh/.ps1   # Extension build scripts
+│   ├── 📄 install-extension.sh      # Installation script
+│   └── 📄 deploy-to-server.sh       # Deployment script
 ├── 📁 templates/                    # Project templates
 │   └── 📁 requirements-template/    # Requirements & discovery template
 ├── 📁 vscode-extension/             # VS Code Extension
