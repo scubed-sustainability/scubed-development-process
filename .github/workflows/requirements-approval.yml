@@ -33,22 +33,47 @@ jobs:
             const issueNumber = context.issue.number;
             const issueBody = context.payload.issue.body;
             
-            // Extract stakeholders from issue body
-            const stakeholderMatch = issueBody.match(/## 👥 Stakeholders\n(.*?)(?=\n##|$)/s);
+            // Extract stakeholders from issue body - try multiple patterns
+            let stakeholderMatch = issueBody.match(/## 👥 Stakeholders\n(.*?)(?=\n##|$)/s);
             if (!stakeholderMatch) {
-              console.log('No stakeholders found in issue');
+              // Try alternative patterns
+              stakeholderMatch = issueBody.match(/## Stakeholders\n(.*?)(?=\n##|$)/s) || 
+                                issueBody.match(/##\s*👥\s*Stakeholders\s*\n(.*?)(?=\n##|$)/s) ||
+                                issueBody.match(/Stakeholders:?\s*\n(.*?)(?=\n##|$)/s);
+            }
+            
+            if (!stakeholderMatch) {
+              console.log('No stakeholders section found in issue');
+              // Set outputs even when no stakeholders found
+              core.setOutput('approved', 'false');
+              core.setOutput('approval-count', '0');
+              core.setOutput('total-stakeholders', '0');
+              core.setOutput('approved-by', '');
+              core.setOutput('stakeholders', '');
               return { approved: false, reason: 'No stakeholders defined' };
             }
             
             const stakeholders = stakeholderMatch[1]
               .split('\n')
               .map(line => line.trim())
-              .filter(line => line.startsWith('@'))
-              .map(line => line.substring(1)); // Remove @ symbol
+              .filter(line => line.startsWith('@') || line.includes('@'))
+              .map(line => {
+                // Handle both @username and plain username formats - include hyphens, underscores, numbers
+                const match = line.match(/@([\w-]+)/);
+                return match ? match[1] : line.replace('@', '').trim();
+              })
+              .filter(name => name.length > 0); // Remove empty strings
             
             console.log('Stakeholders:', stakeholders);
             
             if (stakeholders.length === 0) {
+              console.log('No valid stakeholders found after parsing');
+              // Set outputs even when no valid stakeholders found
+              core.setOutput('approved', 'false');
+              core.setOutput('approval-count', '0');
+              core.setOutput('total-stakeholders', '0');
+              core.setOutput('approved-by', '');
+              core.setOutput('stakeholders', '');
               return { approved: false, reason: 'No valid stakeholders found' };
             }
             
@@ -176,13 +201,35 @@ jobs:
         with:
           script: |
             const issueNumber = context.issue.number;
-            const approvalCount = ${{ steps.check-approvals.outputs.approval-count }};
-            const totalStakeholders = ${{ steps.check-approvals.outputs.total-stakeholders }};
+            const approvalCount = parseInt('${{ steps.check-approvals.outputs.approval-count }}') || 0;
+            const totalStakeholders = parseInt('${{ steps.check-approvals.outputs.total-stakeholders }}') || 0;
             const approvedBy = '${{ steps.check-approvals.outputs.approved-by }}';
             const stakeholders = '${{ steps.check-approvals.outputs.stakeholders }}';
             
-            // Only add progress comment if there are some approvals
-            if (approvalCount > 0) {
+            // Handle case where no stakeholders are defined
+            if (totalStakeholders === 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `## ⚠️ No Stakeholders Defined
+            
+            **Issue:** This requirement issue does not have any stakeholders defined for approval.
+            
+            **Action needed:** Please add a "## 👥 Stakeholders" section to the issue description with the GitHub usernames of people who need to approve this requirement.
+            
+            **Example format:**
+            \`\`\`
+            ## 👥 Stakeholders
+            @username1
+            @username2
+            \`\`\`
+            
+            ---
+            🤖 *Automated by S-cubed Requirements Workflow*`
+              });
+            } else if (approvalCount > 0) {
+              // Only add progress comment if there are some approvals and stakeholders exist
               await github.rest.issues.createComment({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
