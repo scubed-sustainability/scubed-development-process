@@ -1,0 +1,14 @@
+<svg width="24" height="24" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+  <g fill="currentColor">
+    <!-- SCubed logo as simplified geometric shapes -->
+    <path d="M3 3h6v6H3z" opacity="0.9"/>
+    <path d="M9 3h6v6h-6z" opacity="0.7"/>
+    <path d="M15 3h6v6h-6z" opacity="0.5"/>
+    <path d="M3 9h6v6H3z" opacity="0.7"/>
+    <path d="M9 9h6v6h-6z" opacity="0.9"/>
+    <path d="M15 9h6v6h-6z" opacity="0.7"/>
+    <path d="M3 15h6v6H3z" opacity="0.5"/>
+    <path d="M9 15h6v6h-6z" opacity="0.7"/>
+    <path d="M15 15h6v6h-6z" opacity="0.9"/>
+  </g>
+</svg>
