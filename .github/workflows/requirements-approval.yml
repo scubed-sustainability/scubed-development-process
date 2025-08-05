@@ -61,13 +61,16 @@ jobs:
             
             // Check for approval patterns in comments
             const approvalPatterns = [
-              /✅.*approved?/i,
-              /approved?.*✅/i,
-              /lgtm/i,
-              /looks good to me/i,
-              /approve/i,
-              /👍.*approve/i,
-              /approve.*👍/i
+              /approved?/i,           // Simple "approved" or "approve" (case insensitive)
+              /✅.*approved?/i,       // "✅ Approved" 
+              /approved?.*✅/i,       // "Approved ✅"
+              /lgtm/i,               // "LGTM" or "lgtm"
+              /looks good to me/i,   // "Looks good to me"
+              /👍.*approve/i,        // "👍 approve"
+              /approve.*👍/i,        // "approve 👍"
+              /yes/i,                // Simple "yes"
+              /ok/i,                 // Simple "ok" or "OK"
+              /good to go/i          // "Good to go"
             ];
             
             const approvedBy = new Set();
@@ -244,8 +247,9 @@ jobs:
             4. Any security, performance, or compliance considerations?
             
             ### ✅ How to Approve:
-            - Add a comment with "✅ Approved" or "LGTM"
+            - Add a comment with "Approved", "LGTM", "Yes", or "OK"
             - Use 👍 reaction on this issue
+            - Optional: Use "✅ Approved" for visual clarity
             - Provide specific feedback if changes are needed
             
             **Deadline for feedback:** ${new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toLocaleDateString()}
