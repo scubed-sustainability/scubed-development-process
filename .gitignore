@@ -47,3 +47,7 @@ Thumbs.db
 # Build outputs
 dist/
 build/
+
+# VS Code test environment
+.vscode-test/
+vscode-extension/.vscode-test/
