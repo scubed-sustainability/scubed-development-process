@@ -190,7 +190,10 @@
   "scripts": {
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
-    "watch": "tsc -watch -p ./"
+    "watch": "tsc -watch -p ./",
+    "sync-version": "node scripts/sync-version.js",
+    "version": "npm run sync-version && git add template-registry.json",
+    "build": "npm run sync-version && npm run compile"
   },
   "devDependencies": {
     "@types/fs-extra": "^11.0.4",

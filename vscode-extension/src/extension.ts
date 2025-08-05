@@ -524,7 +524,8 @@ async function checkForUpdates(context: vscode.ExtensionContext, silent: boolean
         
         // Get current extension version
         const extension = vscode.extensions.getExtension('scubed-solutions.scubed-development-process');
-        const currentVersion = extension?.packageJSON.version || '1.0.0';
+        const packageJson = require('../package.json');
+        const currentVersion = extension?.packageJSON.version || packageJson.version;
         
         if (!silent) {
             vscode.window.showInformationMessage('Checking for S-cubed extension updates...');
@@ -551,7 +552,7 @@ async function checkForUpdates(context: vscode.ExtensionContext, silent: boolean
                 timeout: 10000
             });
             
-            const latestVersion = response.data.tag_name?.replace('v', '') || '1.0.0';
+            const latestVersion = response.data.tag_name?.replace('v', '') || packageJson.version;
             const downloadUrl = response.data.assets?.find((asset: any) => asset.name.endsWith('.vsix'))?.browser_download_url;
             const releaseUrl = response.data.html_url;
             
