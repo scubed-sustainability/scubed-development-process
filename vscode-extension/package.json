@@ -14,8 +14,7 @@
   },
   "categories": [
     "Other",
-    "Snippets",
-    "Templates"
+    "Snippets"
   ],
   "keywords": [
     "template",
@@ -29,11 +28,7 @@
     "loop",
     "scubed"
   ],
-  "activationEvents": [
-    "onCommand:scubed.createProject",
-    "onCommand:scubed.initializeProject",
-    "onCommand:scubed.generatePrompts"
-  ],
+  "activationEvents": [],
   "main": "./out/vscode-extension/src/extension.js",
   "contributes": {
     "commands": [
@@ -173,12 +168,14 @@
         {
           "id": "scubed.projectTemplates",
           "name": "Project Templates",
-          "when": "true"
+          "when": "true",
+          "icon": "$(file-directory)"
         },
         {
           "id": "scubed.quickActions",
           "name": "Quick Actions",
-          "when": "true"
+          "when": "true",
+          "icon": "$(zap)"
         }
       ]
     },
@@ -283,7 +280,7 @@
     "vscode:prepublish": "npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
-    "test": "npm run compile && node ./out/tests/runTest.js",
+    "test": "npm run compile && node ./tests/runTest.js",
     "sync-version": "node scripts/sync-version.js",
     "version": "npm run sync-version && git add . && echo '🔄 Syncing versions across all files...' && echo '✅ All version changes staged'",
     "build": "npm run sync-version && npm run compile",

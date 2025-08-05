@@ -138,6 +138,22 @@ npm run watch
 - **New Code**: All new functions must include corresponding tests
 - **Coverage Tools**: Use `nyc` or built-in VS Code coverage reporting
 
+#### **🚨 CRITICAL TESTING PRINCIPLES (Learned from Tree Provider Bug)**
+
+**❌ NEVER Test Configuration Without Runtime Verification**
+- **Bad**: Only checking `package.json` has correct structure
+- **Good**: Actually testing that VS Code functionality works as expected
+
+**✅ ALWAYS Test User Experience, Not Just Implementation**
+- **Test What Users See**: Does the activity bar show data? Do commands work?
+- **Test Runtime Behavior**: Are providers registered AND subscribed properly?
+- **Test Integration**: Does the full workflow actually work?
+
+**🔍 Documentation-Code Alignment Verification**
+- **Test File Existence**: If documentation claims tests exist, they MUST exist
+- **Test Coverage Claims**: Verify claimed test counts match actual tests
+- **Test Functionality Claims**: Test what documentation says works
+
 #### **Test Types Required**
 
 **1. Unit Tests** 📋
@@ -184,6 +200,18 @@ npm run watch
   - Large file handling capabilities
 - **Coverage**: All user-facing operations
 
+**6. Runtime Registration Tests** 🔌 *(NEW - Critical Gap Identified)*
+- **Purpose**: Verify VS Code extension components are properly registered at runtime
+- **Location**: `vscode-extension/tests/suite/`
+- **Examples**:
+  - Tree data providers are registered AND subscribed to context
+  - Commands are registered and executable
+  - Configuration settings are accessible
+  - Activity bar views actually populate with data
+  - Webview panels can be created and display content
+- **Coverage**: All VS Code extension contributions
+- **❗ CRITICAL**: Must test runtime behavior, not just package.json structure
+
 ### **CI/CD Pipeline** (`.github/workflows/test.yml`)
 4-stage pipeline with parallel execution:
 1. **Root Tests** - Workflow & validation logic
@@ -209,12 +237,17 @@ vscode-extension/tests/          # Extension-specific tests
 ├── README.md                    # Extension test docs
 ├── runTest.ts                   # VS Code test runner
 └── suite/                      # VS Code integration tests
-    ├── extension.test.ts        # Extension core (6 tests)
-    ├── validation-service.test.ts  # Validation logic (8 tests)
-    ├── github-service.test.ts   # GitHub integration (8 tests)
-    ├── commands.test.ts         # Command handling (10 tests)
-    └── tree-providers.test.ts   # UI components (8 tests)
+    ├── extension.test.ts        # Extension core (6 tests) ✅ EXISTS
+    ├── validation-service.test.ts  # Validation logic (8 tests) ❌ MISSING
+    ├── github-service.test.ts   # GitHub integration (8 tests) ❌ MISSING  
+    ├── commands.test.ts         # Command handling (10 tests) ❌ MISSING
+    └── tree-providers.test.ts   # UI components (8 tests) ✅ CREATED
 ```
+
+**🚨 CRITICAL TESTING GAPS IDENTIFIED:**
+- **Documentation Claims vs Reality**: README claimed 40+ extension tests, but only 6 exist in extension.test.ts
+- **Missing Test Files**: 3 out of 5 documented test files don't exist
+- **Inflated Test Count**: Claims of 8-10 tests per file, but files are missing entirely
 
 ---
 

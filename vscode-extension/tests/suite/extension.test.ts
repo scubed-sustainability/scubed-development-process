@@ -48,13 +48,40 @@ suite('Extension Test Suite', () => {
         assert.ok(config.has('autoInitialize'));
     });
 
-    test('Extension should have activity bar contribution', () => {
+    test('Extension should have activity bar contribution', async () => {
         // This test verifies the extension contributes to the activity bar
         const extension = vscode.extensions.getExtension('scubed-solutions.scubed-development-process');
         if (extension && extension.packageJSON) {
             const contributes = extension.packageJSON.contributes;
             assert.ok(contributes.viewsContainers, 'Should have viewsContainers contribution');
             assert.ok(contributes.views, 'Should have views contribution');
+            
+            // CRITICAL: Also verify providers are actually registered (this would have caught the bug!)
+            if (extension.isActive) {
+                // Try to create tree views to verify providers are registered
+                try {
+                    const testView1 = vscode.window.createTreeView('scubed.projectTemplates', {
+                        treeDataProvider: {
+                            getTreeItem: (element: any) => element,
+                            getChildren: () => Promise.resolve([])
+                        }
+                    });
+                    const testView2 = vscode.window.createTreeView('scubed.quickActions', {
+                        treeDataProvider: {
+                            getTreeItem: (element: any) => element,
+                            getChildren: () => Promise.resolve([])
+                        }
+                    });
+                    
+                    assert.ok(testView1, 'Project templates view should be creatable');
+                    assert.ok(testView2, 'Quick actions view should be creatable');
+                    
+                    testView1.dispose();
+                    testView2.dispose();
+                } catch (error) {
+                    assert.fail(`Tree view creation failed: ${error} - This indicates provider registration issues`);
+                }
+            }
         }
     });
 

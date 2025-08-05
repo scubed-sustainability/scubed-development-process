@@ -39,8 +39,8 @@ export function activate(context: vscode.ExtensionContext) {
     const projectTemplatesProvider = new ProjectTemplatesProvider();
     const quickActionsProvider = new QuickActionsProvider();
     
-    vscode.window.registerTreeDataProvider('scubed.projectTemplates', projectTemplatesProvider);
-    vscode.window.registerTreeDataProvider('scubed.quickActions', quickActionsProvider);
+    const projectTemplatesProviderRegistration = vscode.window.registerTreeDataProvider('scubed.projectTemplates', projectTemplatesProvider);
+    const quickActionsProviderRegistration = vscode.window.registerTreeDataProvider('scubed.quickActions', quickActionsProvider);
 
     context.subscriptions.push(
         createProjectCommand,
@@ -55,7 +55,9 @@ export function activate(context: vscode.ExtensionContext) {
         triggerApprovalCheckCommand,
         requestReReviewCommand,
         moveToInDevelopmentCommand,
-        viewRequirementsDashboardCommand
+        viewRequirementsDashboardCommand,
+        projectTemplatesProviderRegistration,
+        quickActionsProviderRegistration
     );
 
     // Check for updates on startup if enabled
