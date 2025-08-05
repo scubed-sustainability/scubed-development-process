@@ -6,7 +6,7 @@
 
 ### 1. Install Extension (One Command)
 ```bash
-curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-development-process/main/install-extension.sh | bash
+curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-development-process/main/scripts/install-extension.sh | bash
 ```
 
 ### 2. Create Project
@@ -57,7 +57,7 @@ curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-develop
 2. Run: **"Shell Command: Install 'code' command in PATH"**
 3. Restart terminal, then run:
 ```bash
-curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-development-process/main/install-extension.sh | bash
+curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-development-process/main/scripts/install-extension.sh | bash
 ```
 
 ## Method 2: Manual Installation

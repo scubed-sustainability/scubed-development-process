@@ -570,7 +570,7 @@ async function checkForUpdates(context: vscode.ExtensionContext, silent: boolean
                 if (choice === 'One-Click Update') {
                     // Show terminal command for easy update
                     const terminal = vscode.window.createTerminal('S-cubed Update');
-                    terminal.sendText('curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-development-process/main/install-extension.sh | bash');
+                    terminal.sendText('curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-development-process/main/scripts/install-extension.sh | bash');
                     terminal.show();
                     vscode.window.showInformationMessage('🚀 Update command sent to terminal! Press Enter to run it.');
                 } else if (choice === 'Download Manually' && downloadUrl) {
@@ -711,7 +711,7 @@ function showUpdateInstructions(latestVersion?: string, downloadUrl?: string) {
         <div class="step">
             <h3>Method 1: One-Click Install Script (Recommended)</h3>
             <p>Run this command in your terminal:</p>
-            <div class="command">curl -sSL https://raw.githubusercontent.com/avanishah/scubed-development-process/main/install-extension.sh | bash</div>
+            <div class="command">curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-development-process/main/scripts/install-extension.sh | bash</div>
             <p>This script will:</p>
             <ul>
                 <li>Download the latest version automatically</li>

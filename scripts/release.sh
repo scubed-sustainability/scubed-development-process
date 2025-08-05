@@ -124,7 +124,7 @@ for i in {1..12}; do  # Wait up to 2 minutes
         echo "   6. ✅ GitHub Actions built and published release"
         echo ""
         echo -e "${BLUE}📦 Team can now install with:${NC}"
-        echo "   curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-development-process/main/install-extension.sh | bash"
+        echo "   curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-development-process/main/scripts/install-extension.sh | bash"
         exit 0
     fi
     echo -e "${YELLOW}⏳ Waiting for release to be created... (${i}/12)${NC}"
