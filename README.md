@@ -132,7 +132,7 @@ curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-develop
 
 ```bash
 # Automated release (handles everything!)
-./scripts/release.sh patch "Fix activity bar icon display"   # 1.0.30 → 1.0.31
+./scripts/release.sh patch "Fix activity bar icon display"   # 1.0.31 → 1.0.32
 ./scripts/release.sh minor "Add new template features"       # 1.0.20 → 1.1.0  
 ./scripts/release.sh major "Breaking API changes"            # 1.0.20 → 2.0.0
 
@@ -394,6 +394,10 @@ We welcome contributions to the S-cubed Development Process!
 ---
 
 # 📈 Changelog
+
+## 1.0.32
+- 🔄 Version sync update - 2025-08-05
+- ✨ Latest features and improvements
 
 ## 1.0.31
 - 🔄 Version sync update - 2025-08-05
