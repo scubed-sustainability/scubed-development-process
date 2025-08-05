@@ -41,9 +41,24 @@ function checkApprovals(issueBody, comments = [], reactions = []) {
     return { approved: false, reason: 'No stakeholders defined' };
   }
   
-  const stakeholders = stakeholderMatch[1]
+  const stakeholderContent = stakeholderMatch[1].trim();
+  
+  // Check if the stakeholders section is actually empty (just whitespace)
+  if (!stakeholderContent || stakeholderContent.length === 0) {
+    console.log('❌ Empty stakeholders section found');
+    // Set outputs even when no stakeholders found
+    mockCore.setOutput('approved', 'false');
+    mockCore.setOutput('approval-count', '0');
+    mockCore.setOutput('total-stakeholders', '0');
+    mockCore.setOutput('approved-by', '');
+    mockCore.setOutput('stakeholders', '');
+    return { approved: false, reason: 'Empty stakeholders section' };
+  }
+  
+  const stakeholders = stakeholderContent
     .split(/\r?\n/)  // Handle both \n and \r\n line endings
     .map(line => line.trim())
+    .filter(line => line.length > 0) // Remove empty lines first
     .filter(line => line.startsWith('@') || line.includes('@'))
     .map(line => {
       // Handle both @username and plain username formats - include hyphens, underscores, numbers
