@@ -76,6 +76,31 @@
         "command": "scubed.checkGitHubFeedback",
         "title": "Check GitHub Feedback",
         "category": "S-cubed"
+      },
+      {
+        "command": "scubed.checkApprovalStatus",
+        "title": "Check Approval Status",
+        "category": "S-cubed"
+      },
+      {
+        "command": "scubed.triggerApprovalCheck",
+        "title": "Trigger Approval Check",
+        "category": "S-cubed"
+      },
+      {
+        "command": "scubed.requestReReview",
+        "title": "Request Re-Review",
+        "category": "S-cubed"
+      },
+      {
+        "command": "scubed.moveToInDevelopment",
+        "title": "Move to In Development",
+        "category": "S-cubed"
+      },
+      {
+        "command": "scubed.viewRequirementsDashboard",
+        "title": "View Requirements Dashboard",
+        "category": "S-cubed"
       }
     ],
     "menus": {
@@ -102,6 +127,26 @@
         },
         {
           "command": "scubed.checkGitHubFeedback",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "scubed.checkApprovalStatus",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "scubed.triggerApprovalCheck",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "scubed.requestReReview",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "scubed.moveToInDevelopment",
+          "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "scubed.viewRequirementsDashboard",
           "when": "workspaceFolderCount > 0"
         }
       ],
