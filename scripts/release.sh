@@ -78,6 +78,15 @@ echo -e "${GREEN}📦 New version: ${NEW_VERSION}${NC}"
 
 echo -e "${BLUE}✅ Version sync completed automatically by npm version hook${NC}"
 
+# Test compilation before proceeding
+echo -e "${BLUE}🔨 Testing TypeScript compilation...${NC}"
+if ! npm run compile; then
+    echo -e "${RED}❌ TypeScript compilation failed!${NC}"
+    echo -e "${YELLOW}⚠️  Please fix the compilation errors before releasing.${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✅ TypeScript compilation successful${NC}"
+
 # Go back to root
 cd ..
 
@@ -133,4 +142,32 @@ echo -e "${YELLOW}⚠️  Release creation is taking longer than expected.${NC}"
 echo -e "${BLUE}Please check the GitHub Actions status manually:${NC}"
 echo "   https://github.com/scubed-sustainability/scubed-development-process/actions"
 echo ""
-echo -e "${GREEN}✅ Version bump and push completed successfully!${NC}"
+
+# Check if GitHub Actions workflow failed
+echo -e "${BLUE}🔍 Checking GitHub Actions status...${NC}"
+WORKFLOW_STATUS=$(curl -s "https://api.github.com/repos/scubed-sustainability/scubed-development-process/actions/runs?event=push&per_page=1" | grep -o '"conclusion":"[^"]*"' | head -1 | cut -d'"' -f4)
+
+if [ "$WORKFLOW_STATUS" = "failure" ]; then
+    echo -e "${RED}❌ GitHub Actions workflow FAILED!${NC}"
+    echo -e "${YELLOW}⚠️  The version was bumped and pushed, but the release build failed.${NC}"
+    echo -e "${BLUE}Please check the workflow logs and fix any build errors:${NC}"
+    echo "   https://github.com/scubed-sustainability/scubed-development-process/actions"
+    exit 1
+elif [ "$WORKFLOW_STATUS" = "success" ]; then
+    echo -e "${GREEN}✅ GitHub Actions workflow completed successfully!${NC}"
+else
+    echo -e "${YELLOW}⚠️  GitHub Actions workflow is still running or status unknown.${NC}"
+fi
+
+echo -e "${BLUE}📋 What was completed:${NC}"
+echo "   1. ✅ Committed your changes"
+echo "   2. ✅ Bumped version to v${NEW_VERSION}"
+echo "   3. ✅ Synced version across all files"
+echo "   4. ✅ Tested TypeScript compilation"
+echo "   5. ✅ Created git tag"
+echo "   6. ✅ Pushed to GitHub"
+if [ "$WORKFLOW_STATUS" = "failure" ]; then
+    echo "   7. ❌ GitHub Actions build failed"
+else
+    echo "   7. ⏳ GitHub Actions release build (check manually)"
+fi

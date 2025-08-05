@@ -267,10 +267,10 @@ export class GitHubService {
 
             // Check comments for approvals
             for (const comment of comments.data) {
-                const commentBody = comment.body.toLowerCase();
+                const commentBody = comment.body?.toLowerCase();
                 const author = comment.user?.login;
 
-                if (author && stakeholders.includes(author)) {
+                if (author && commentBody && stakeholders.includes(author)) {
                     const hasApproval = approvalPatterns.some(pattern => pattern.test(commentBody));
                     if (hasApproval) {
                         approvedBy.add(author);
