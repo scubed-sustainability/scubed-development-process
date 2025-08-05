@@ -114,7 +114,8 @@
       "activitybar": [
         {
           "id": "scubed-explorer",
-          "title": "SCubed"
+          "title": "SCubed",
+          "icon": "images/activity-icon.svg"
         }
       ]
     },
