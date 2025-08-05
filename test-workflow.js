@@ -21,13 +21,13 @@ const mockCore = {
 function checkApprovals(issueBody, comments = [], reactions = []) {
   console.log('🔍 Starting approval check...\n');
   
-  // Extract stakeholders from issue body - try multiple patterns
-  let stakeholderMatch = issueBody.match(/## 👥 Stakeholders\n(.*?)(?=\n##|$)/s);
+  // Extract stakeholders from issue body - try multiple patterns with better line ending support
+  let stakeholderMatch = issueBody.match(/## 👥 Stakeholders\r?\n(.*?)(?=\r?\n##|$)/s);
   if (!stakeholderMatch) {
-    // Try alternative patterns
-    stakeholderMatch = issueBody.match(/## Stakeholders\n(.*?)(?=\n##|$)/s) || 
-                      issueBody.match(/##\s*👥\s*Stakeholders\s*\n(.*?)(?=\n##|$)/s) ||
-                      issueBody.match(/Stakeholders:?\s*\n(.*?)(?=\n##|$)/s);
+    // Try alternative patterns with both \n and \r\n support
+    stakeholderMatch = issueBody.match(/## Stakeholders\r?\n(.*?)(?=\r?\n##|$)/s) || 
+                      issueBody.match(/##\s*👥\s*Stakeholders\s*\r?\n(.*?)(?=\r?\n##|$)/s) ||
+                      issueBody.match(/Stakeholders:?\s*\r?\n(.*?)(?=\r?\n##|$)/s);
   }
   
   if (!stakeholderMatch) {
@@ -42,7 +42,7 @@ function checkApprovals(issueBody, comments = [], reactions = []) {
   }
   
   const stakeholders = stakeholderMatch[1]
-    .split('\n')
+    .split(/\r?\n/)  // Handle both \n and \r\n line endings
     .map(line => line.trim())
     .filter(line => line.startsWith('@') || line.includes('@'))
     .map(line => {
@@ -52,7 +52,11 @@ function checkApprovals(issueBody, comments = [], reactions = []) {
     })
     .filter(name => name.length > 0); // Remove empty strings
   
-  console.log('👥 Stakeholders found:', stakeholders);
+  console.log('🔍 Raw stakeholder match:', JSON.stringify(stakeholderMatch[1]));
+  console.log('🔍 Raw match length:', stakeholderMatch[1].length);
+  console.log('🔍 Split lines:', stakeholderMatch[1].split(/\r?\n/).map(line => `"${line}"`));
+  console.log('🔍 After filtering:', stakeholderMatch[1].split(/\r?\n/).map(line => line.trim()).filter(line => line.startsWith('@') || line.includes('@')));
+  console.log('👥 Final stakeholders:', stakeholders);
   
   if (stakeholders.length === 0) {
     console.log('❌ No valid stakeholders found after parsing');
@@ -225,6 +229,56 @@ function runTests() {
     console.log(`   Result: ${testResult.approved ? '✅ APPROVED' : '❌ NOT APPROVED'}`);
   });
   
+  // Test 5: Empty stakeholders section (the original problem)
+  console.log('\n' + '='.repeat(50));
+  console.log('\n📋 TEST 5: Empty stakeholders section (GitHub issue scenario)');
+  const emptyStakeholdersIssue = `# Test Issue
+
+## 🎯 Business Objectives
+- Improve user engagement
+
+## 👥 Stakeholders
+
+## 📊 Priority: High`;
+
+  const result5 = checkApprovals(emptyStakeholdersIssue, [], []);
+  testConditionalLogic(mockCore.outputs);
+
+  // Test 6: Windows line endings
+  console.log('\n' + '='.repeat(50));
+  console.log('\n📋 TEST 6: Windows line endings (\\r\\n)');
+  const windowsIssue = `# Test Issue\r\n\r\n## 👥 Stakeholders\r\n@windows-user\r\n@another-user\r\n\r\n## 📊 Priority: High`;
+
+  const windowsComments = [
+    { user: { login: 'windows-user' }, body: 'Approved!' }
+  ];
+
+  const result6 = checkApprovals(windowsIssue, windowsComments, []);
+  testConditionalLogic(mockCore.outputs);
+
+  // Test 7: Mixed username formats
+  console.log('\n' + '='.repeat(50));
+  console.log('\n📋 TEST 7: Mixed username formats');
+  const mixedFormatsIssue = `# Test Issue
+
+## 👥 Stakeholders
+@user_with_underscores
+@user-with-hyphens
+username-without-at
+@normal-user
+
+## 📊 Priority: High`;
+
+  const mixedComments = [
+    { user: { login: 'user_with_underscores' }, body: 'LGTM' },
+    { user: { login: 'user-with-hyphens' }, body: 'approved' },
+    { user: { login: 'username-without-at' }, body: 'yes' },
+    { user: { login: 'normal-user' }, body: 'ok' }
+  ];
+
+  const result7 = checkApprovals(mixedFormatsIssue, mixedComments, []);
+  testConditionalLogic(mockCore.outputs);
+
   console.log('\n' + '='.repeat(50));
   console.log('\n✅ All tests completed!');
 }

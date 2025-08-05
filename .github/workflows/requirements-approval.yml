@@ -33,13 +33,13 @@ jobs:
             const issueNumber = context.issue.number;
             const issueBody = context.payload.issue.body;
             
-            // Extract stakeholders from issue body - try multiple patterns
-            let stakeholderMatch = issueBody.match(/## 👥 Stakeholders\n(.*?)(?=\n##|$)/s);
+            // Extract stakeholders from issue body - try multiple patterns with better line ending support
+            let stakeholderMatch = issueBody.match(/## 👥 Stakeholders\r?\n(.*?)(?=\r?\n##|$)/s);
             if (!stakeholderMatch) {
-              // Try alternative patterns
-              stakeholderMatch = issueBody.match(/## Stakeholders\n(.*?)(?=\n##|$)/s) || 
-                                issueBody.match(/##\s*👥\s*Stakeholders\s*\n(.*?)(?=\n##|$)/s) ||
-                                issueBody.match(/Stakeholders:?\s*\n(.*?)(?=\n##|$)/s);
+              // Try alternative patterns with both \n and \r\n support
+              stakeholderMatch = issueBody.match(/## Stakeholders\r?\n(.*?)(?=\r?\n##|$)/s) || 
+                                issueBody.match(/##\s*👥\s*Stakeholders\s*\r?\n(.*?)(?=\r?\n##|$)/s) ||
+                                issueBody.match(/Stakeholders:?\s*\r?\n(.*?)(?=\r?\n##|$)/s);
             }
             
             if (!stakeholderMatch) {
@@ -54,7 +54,7 @@ jobs:
             }
             
             const stakeholders = stakeholderMatch[1]
-              .split('\n')
+              .split(/\r?\n/)  // Handle both \n and \r\n line endings
               .map(line => line.trim())
               .filter(line => line.startsWith('@') || line.includes('@'))
               .map(line => {
@@ -64,9 +64,10 @@ jobs:
               })
               .filter(name => name.length > 0); // Remove empty strings
             
-            console.log('Raw stakeholder match:', stakeholderMatch[1]);
-            console.log('Split lines:', stakeholderMatch[1].split('\n').map(line => `"${line}"`));
-            console.log('After filtering:', stakeholderMatch[1].split('\n').map(line => line.trim()).filter(line => line.startsWith('@') || line.includes('@')));
+            console.log('Raw stakeholder match:', JSON.stringify(stakeholderMatch[1]));
+            console.log('Raw match length:', stakeholderMatch[1].length);
+            console.log('Split lines:', stakeholderMatch[1].split(/\r?\n/).map(line => `"${line}"`));
+            console.log('After filtering:', stakeholderMatch[1].split(/\r?\n/).map(line => line.trim()).filter(line => line.startsWith('@') || line.includes('@')));
             console.log('Final stakeholders:', stakeholders);
             
             if (stakeholders.length === 0) {
@@ -265,15 +266,15 @@ jobs:
             const issueTitle = context.payload.issue.title;
             const issueBody = context.payload.issue.body;
             
-            // Extract stakeholders from issue body
-            const stakeholderMatch = issueBody.match(/## 👥 Stakeholders\n(.*?)(?=\n##|$)/s);
+            // Extract stakeholders from issue body with improved line ending support
+            const stakeholderMatch = issueBody.match(/## 👥 Stakeholders\r?\n(.*?)(?=\r?\n##|$)/s);
             if (!stakeholderMatch) {
               console.log('No stakeholders found for notification');
               return;
             }
             
             const stakeholders = stakeholderMatch[1]
-              .split('\n')
+              .split(/\r?\n/)  // Handle both \n and \r\n line endings
               .map(line => line.trim())
               .filter(line => line.startsWith('@'))
               .map(line => line.substring(1))
