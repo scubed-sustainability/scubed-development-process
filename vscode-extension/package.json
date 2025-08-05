@@ -114,8 +114,7 @@
       "activitybar": [
         {
           "id": "scubed-explorer",
-          "title": "SCubed",
-          "icon": "$(symbol-text)"
+          "title": "SCubed"
         }
       ]
     },
