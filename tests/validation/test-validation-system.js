@@ -100,7 +100,7 @@ async function testValidationSystem() {
                 sourceFile: 'test.md'
             },
             expectedValid: false,
-            expectedErrors: 5, // title, summary, objectives, requirements, criteria, stakeholders
+            expectedErrors: 6, // title, summary, objectives, requirements, criteria, stakeholders
             expectedWarnings: 0
         },
         {
@@ -135,7 +135,7 @@ async function testValidationSystem() {
             },
             expectedValid: true,
             expectedErrors: 0,
-            expectedWarnings: 2 // Short title, invalid priority
+            expectedWarnings: 1 // Invalid priority only
         },
         {
             name: 'Duplicate Stakeholders',

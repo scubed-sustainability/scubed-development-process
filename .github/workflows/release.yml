@@ -38,10 +38,10 @@ jobs:
           npm install
 
       - name: Run workflow tests
-        run: npm run test:workflows || echo "Workflow tests completed"
+        run: npm run test:workflows
 
       - name: Run validation tests  
-        run: npm run test:validation || echo "Validation tests completed"
+        run: npm run test:validation
 
       - name: Compile TypeScript
         run: |
@@ -51,7 +51,7 @@ jobs:
       - name: Run extension tests
         run: |
           cd vscode-extension
-          npm test || echo "Extension tests completed"
+          npm test
 
       - name: Setup headless display for integration tests
         run: |
@@ -61,7 +61,7 @@ jobs:
       - name: Run extension integration tests (headless)
         run: |
           cd vscode-extension
-          xvfb-run -a npm test || echo "Integration tests require VS Code environment"
+          xvfb-run -a npm test
 
   release:
     runs-on: ubuntu-latest

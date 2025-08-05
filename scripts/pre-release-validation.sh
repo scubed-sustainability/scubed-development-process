@@ -131,6 +131,7 @@ else
         # Verify that UX validation passed
         if grep -q "UX VALIDATION PASSED" /tmp/test.log; then
             log_success "Critical UX validation passed - core functionality verified"
+            log_warning "However, VS Code integration tests failed due to environment limitations"
         else
             log_error "UX validation did not pass - this is a critical failure"
         fi

@@ -25,12 +25,16 @@ suite('Extension Test Suite', () => {
             'scubed.createProject',
             'scubed.initializeProject',
             'scubed.generatePrompts',
-            'scubed.pushRequirements',
-            'scubed.syncGitHub',
-            'scubed.checkFeedback',
-            'scubed.openGallery',
-            'scubed.checkUpdates',
-            'scubed.help'
+            'scubed.openTemplateGallery',
+            'scubed.checkForUpdates',
+            'scubed.pushToGitHub',
+            'scubed.syncWithGitHub',
+            'scubed.checkGitHubFeedback',
+            'scubed.checkApprovalStatus',
+            'scubed.triggerApprovalCheck',
+            'scubed.requestReReview',
+            'scubed.moveToInDevelopment',
+            'scubed.viewRequirementsDashboard'
         ];
 
         expectedCommands.forEach(cmd => {
