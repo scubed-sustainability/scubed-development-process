@@ -38,6 +38,7 @@ jobs:
       - name: Build and package extension
         run: |
           cd vscode-extension
+          npm run sync-version
           npm run compile
           vsce package --allow-star-activation
           
