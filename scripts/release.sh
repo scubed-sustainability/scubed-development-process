@@ -68,7 +68,7 @@ cd vscode-extension
 CURRENT_VERSION=$(node -p "require('./package.json').version")
 echo -e "${BLUE}📦 Current version: ${CURRENT_VERSION}${NC}"
 
-# Update version and sync all files
+# Update version and sync all files (npm version hook handles sync automatically)
 echo -e "${BLUE}🔄 Updating version ($RELEASE_TYPE)...${NC}"
 npm version $RELEASE_TYPE --no-git-tag-version
 
@@ -76,9 +76,7 @@ npm version $RELEASE_TYPE --no-git-tag-version
 NEW_VERSION=$(node -p "require('./package.json').version")
 echo -e "${GREEN}📦 New version: ${NEW_VERSION}${NC}"
 
-# Sync version across all files
-echo -e "${BLUE}🔄 Syncing version across all files...${NC}"
-npm run sync-version
+echo -e "${BLUE}✅ Version sync completed automatically by npm version hook${NC}"
 
 # Go back to root
 cd ..
