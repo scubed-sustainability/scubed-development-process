@@ -28,8 +28,6 @@ Enhanced user dashboard with real-time notifications and activity feed.
 - Mobile responsive design
 
 ## 👥 Stakeholders
-@avanishah
-@business-analyst
-@ux-designer
+@avani-shah-s3
 
 ## 📊 Priority: High

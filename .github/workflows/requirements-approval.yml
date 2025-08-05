@@ -111,7 +111,7 @@ jobs:
             console.log('All approved:', allApproved);
             
             // Set outputs for next steps
-            core.setOutput('approved', allApproved);
+            core.setOutput('approved', allApproved.toString());
             core.setOutput('approval-count', approvalCount);
             core.setOutput('total-stakeholders', totalStakeholders);
             core.setOutput('approved-by', Array.from(approvedBy).join(', '));
