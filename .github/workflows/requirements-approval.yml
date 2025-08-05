@@ -1,0 +1,256 @@
+name: Requirements Approval Workflow
+
+on:
+  issue_comment:
+    types: [created, edited]
+  issues:
+    types: [labeled, unlabeled]
+
+permissions:
+  issues: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  check-approval:
+    if: contains(github.event.issue.labels.*.name, 'requirement') && contains(github.event.issue.labels.*.name, 'pending-review')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      
+      - name: Check stakeholder approvals
+        id: check-approvals
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = context.issue.number;
+            const issueBody = context.payload.issue.body;
+            
+            // Extract stakeholders from issue body
+            const stakeholderMatch = issueBody.match(/## 👥 Stakeholders\n(.*?)(?=\n##|$)/s);
+            if (!stakeholderMatch) {
+              console.log('No stakeholders found in issue');
+              return { approved: false, reason: 'No stakeholders defined' };
+            }
+            
+            const stakeholders = stakeholderMatch[1]
+              .split('\n')
+              .map(line => line.trim())
+              .filter(line => line.startsWith('@'))
+              .map(line => line.substring(1)); // Remove @ symbol
+            
+            console.log('Stakeholders:', stakeholders);
+            
+            if (stakeholders.length === 0) {
+              return { approved: false, reason: 'No valid stakeholders found' };
+            }
+            
+            // Get all comments on the issue
+            const comments = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber
+            });
+            
+            // Check for approval patterns in comments
+            const approvalPatterns = [
+              /✅.*approved?/i,
+              /approved?.*✅/i,
+              /lgtm/i,
+              /looks good to me/i,
+              /approve/i,
+              /👍.*approve/i,
+              /approve.*👍/i
+            ];
+            
+            const approvedBy = new Set();
+            
+            // Check comments for approvals
+            for (const comment of comments.data) {
+              const commentBody = comment.body.toLowerCase();
+              const author = comment.user.login;
+              
+              // Check if author is a stakeholder
+              if (stakeholders.includes(author)) {
+                // Check for approval patterns
+                const hasApproval = approvalPatterns.some(pattern => pattern.test(commentBody));
+                if (hasApproval) {
+                  approvedBy.add(author);
+                  console.log(`Approval found from ${author}: ${comment.body.substring(0, 100)}...`);
+                }
+              }
+            }
+            
+            // Check reactions on the issue (👍 reactions as approvals)
+            const reactions = await github.rest.reactions.listForIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber
+            });
+            
+            for (const reaction of reactions.data) {
+              if (reaction.content === '+1' && stakeholders.includes(reaction.user.login)) {
+                approvedBy.add(reaction.user.login);
+                console.log(`Thumbs up approval from ${reaction.user.login}`);
+              }
+            }
+            
+            const allApproved = stakeholders.every(stakeholder => approvedBy.has(stakeholder));
+            const approvalCount = approvedBy.size;
+            const totalStakeholders = stakeholders.length;
+            
+            console.log(`Approvals: ${approvalCount}/${totalStakeholders}`);
+            console.log('Approved by:', Array.from(approvedBy));
+            console.log('All approved:', allApproved);
+            
+            // Set outputs for next steps
+            core.setOutput('approved', allApproved);
+            core.setOutput('approval-count', approvalCount);
+            core.setOutput('total-stakeholders', totalStakeholders);
+            core.setOutput('approved-by', Array.from(approvedBy).join(', '));
+            core.setOutput('stakeholders', stakeholders.join(', '));
+            
+            return {
+              approved: allApproved,
+              approvalCount,
+              totalStakeholders,
+              approvedBy: Array.from(approvedBy),
+              stakeholders
+            };
+      
+      - name: Update issue status to approved
+        if: steps.check-approvals.outputs.approved == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = context.issue.number;
+            
+            // Remove 'pending-review' label and add 'approved' label
+            await github.rest.issues.removeLabel({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              name: 'pending-review'
+            });
+            
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              labels: ['approved', 'ready-for-development']
+            });
+            
+            // Add approval confirmation comment
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: `## ✅ Requirements Approved!
+            
+            **All stakeholder approvals received:**
+            ${{ steps.check-approvals.outputs.approved-by }}
+            
+            **Status:** APPROVED → Ready for Development
+            
+            The requirements have been automatically moved to the "Approved" status and are ready for implementation.
+            
+            ---
+            🤖 *Automated by S-cubed Requirements Workflow*`
+            });
+            
+            console.log('Issue approved and labels updated');
+      
+      - name: Update approval progress
+        if: steps.check-approvals.outputs.approved == 'false'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = context.issue.number;
+            const approvalCount = ${{ steps.check-approvals.outputs.approval-count }};
+            const totalStakeholders = ${{ steps.check-approvals.outputs.total-stakeholders }};
+            const approvedBy = '${{ steps.check-approvals.outputs.approved-by }}';
+            const stakeholders = '${{ steps.check-approvals.outputs.stakeholders }}';
+            
+            // Only add progress comment if there are some approvals
+            if (approvalCount > 0) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `## 🔄 Approval Progress Update
+            
+            **Current Status:** ${approvalCount}/${totalStakeholders} stakeholders approved
+            
+            ✅ **Approved by:** ${approvedBy || 'None yet'}
+            
+            ⏳ **Still needed from:** ${stakeholders.split(', ').filter(s => !approvedBy.includes(s)).join(', ')}
+            
+            ---
+            🤖 *Automated by S-cubed Requirements Workflow*`
+              });
+            }
+            
+            console.log(`Approval progress: ${approvalCount}/${totalStakeholders}`);
+
+  notify-stakeholders:
+    if: github.event.action == 'labeled' && contains(github.event.label.name, 'pending-review')
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Notify stakeholders of new requirements
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = context.issue.number;
+            const issueTitle = context.payload.issue.title;
+            const issueBody = context.payload.issue.body;
+            
+            // Extract stakeholders from issue body
+            const stakeholderMatch = issueBody.match(/## 👥 Stakeholders\n(.*?)(?=\n##|$)/s);
+            if (!stakeholderMatch) {
+              console.log('No stakeholders found for notification');
+              return;
+            }
+            
+            const stakeholders = stakeholderMatch[1]
+              .split('\n')
+              .map(line => line.trim())
+              .filter(line => line.startsWith('@'))
+              .map(line => line.substring(1))
+              .join(' @');
+            
+            if (stakeholders) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `## 📢 Stakeholder Review Requested
+            
+            @${stakeholders}
+            
+            Your review and approval is requested for these requirements: **${issueTitle}**
+            
+            ### 🔍 Please Review:
+            1. Are the business objectives complete and accurate?
+            2. Are there any missing functional requirements?
+            3. Do the acceptance criteria cover all scenarios?
+            4. Any security, performance, or compliance considerations?
+            
+            ### ✅ How to Approve:
+            - Add a comment with "✅ Approved" or "LGTM"
+            - Use 👍 reaction on this issue
+            - Provide specific feedback if changes are needed
+            
+            **Deadline for feedback:** ${new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toLocaleDateString()}
+            
+            ---
+            🤖 *Automated by S-cubed Requirements Workflow*`
+              });
+            }

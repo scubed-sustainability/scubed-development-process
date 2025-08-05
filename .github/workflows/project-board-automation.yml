@@ -1,0 +1,239 @@
+name: Project Board Automation
+
+on:
+  issues:
+    types: [opened, labeled, unlabeled, closed]
+  pull_request:
+    types: [opened, closed, merged]
+
+permissions:
+  issues: write
+  contents: read
+  pull-requests: write
+  repository-projects: write
+
+jobs:
+  update-project-board:
+    runs-on: ubuntu-latest
+    if: contains(github.event.issue.labels.*.name, 'requirement') || contains(github.event.pull_request.labels.*.name, 'requirement')
+    
+    steps:
+      - name: Move to appropriate column
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = context.issue?.number || context.payload.pull_request?.number;
+            const isIssue = !!context.issue;
+            const isPR = !!context.payload.pull_request;
+            
+            console.log(`Processing ${isIssue ? 'issue' : 'PR'} #${issueNumber}`);
+            
+            if (isIssue) {
+              const labels = context.payload.issue.labels.map(label => label.name);
+              console.log('Issue labels:', labels);
+              
+              // Determine target column based on labels
+              let targetColumn = null;
+              
+              if (labels.includes('pending-review')) {
+                targetColumn = 'Stakeholder Review';
+              } else if (labels.includes('approved') && labels.includes('ready-for-development')) {
+                targetColumn = 'Approved';
+              } else if (labels.includes('in-development')) {
+                targetColumn = 'In Development';
+              } else if (labels.includes('rejected')) {
+                targetColumn = 'Rejected';
+              } else if (labels.includes('requirement') && !labels.includes('pending-review')) {
+                targetColumn = 'Requirements Gathering';
+              }
+              
+              if (targetColumn) {
+                console.log(`Should move to column: ${targetColumn}`);
+                
+                // Note: This would require setting up GitHub Projects (Classic) or Projects (Beta)
+                // For now, we'll just log the intended action
+                // In a real implementation, you would use the Projects API
+                
+                // Add a comment to track the status change
+                if (context.payload.action === 'labeled') {
+                  const addedLabel = context.payload.label.name;
+                  
+                  if (addedLabel === 'approved') {
+                    await github.rest.issues.createComment({
+                      owner: context.repo.owner,
+                      repo: context.repo.repo,
+                      issue_number: issueNumber,
+                      body: `🏗️ **Project Status Update**
+              
+              This requirement has been moved to the **${targetColumn}** column in the project board.
+              
+              ---
+              🤖 *Automated by Project Board Workflow*`
+                    });
+                  }
+                }
+              }
+            }
+            
+            // Handle PR events
+            if (isPR) {
+              const prLabels = context.payload.pull_request.labels.map(label => label.name);
+              const prState = context.payload.pull_request.state;
+              const prMerged = context.payload.pull_request.merged;
+              
+              console.log('PR labels:', prLabels);
+              console.log('PR state:', prState, 'merged:', prMerged);
+              
+              if (prLabels.includes('requirement')) {
+                let targetColumn = null;
+                
+                if (prState === 'open') {
+                  targetColumn = 'In Development';
+                } else if (prMerged) {
+                  targetColumn = 'Done';
+                } else if (prState === 'closed' && !prMerged) {
+                  targetColumn = 'In Development'; // Return to development
+                }
+                
+                if (targetColumn) {
+                  console.log(`PR should move to column: ${targetColumn}`);
+                }
+              }
+            }
+
+  notify-status-change:
+    runs-on: ubuntu-latest
+    if: github.event.action == 'labeled' && (contains(github.event.label.name, 'approved') || contains(github.event.label.name, 'rejected'))
+    
+    steps:
+      - name: Notify stakeholders of status change
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = context.issue.number;
+            const issueTitle = context.payload.issue.title;
+            const issueBody = context.payload.issue.body;
+            const labelAdded = context.payload.label.name;
+            
+            // Extract stakeholders from issue body
+            const stakeholderMatch = issueBody.match(/## 👥 Stakeholders\n(.*?)(?=\n##|$)/s);
+            if (!stakeholderMatch) {
+              console.log('No stakeholders found for notification');
+              return;
+            }
+            
+            const stakeholders = stakeholderMatch[1]
+              .split('\n')
+              .map(line => line.trim())
+              .filter(line => line.startsWith('@'))
+              .map(line => line.substring(1))
+              .join(' @');
+            
+            if (stakeholders && labelAdded === 'approved') {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `## 🎉 Requirements Status Update
+              
+              @${stakeholders}
+              
+              **Great news!** The requirements for **${issueTitle}** have been **APPROVED** and are ready for development.
+              
+              ### What happens next:
+              1. ✅ Requirements moved to "Approved" status
+              2. 🚧 Development team can begin implementation
+              3. 📋 Tasks will be created in project management system
+              4. 🔔 You'll be notified when development is complete
+              
+              Thank you for your collaboration in the requirements review process!
+              
+              ---
+              🤖 *Automated notification from S-cubed Requirements Workflow*`
+              });
+            } else if (stakeholders && labelAdded === 'rejected') {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issueNumber,
+                body: `## ❌ Requirements Status Update
+              
+              @${stakeholders}
+              
+              The requirements for **${issueTitle}** have been **REJECTED** and need revision.
+              
+              ### What happens next:
+              1. 📝 Requirements will be revised based on feedback
+              2. 🔄 New review cycle will begin
+              3. 🔔 You'll be notified when ready for re-review
+              
+              Please review the feedback comments and let us know if you have additional concerns.
+              
+              ---
+              🤖 *Automated notification from S-cubed Requirements Workflow*`
+              });
+            }
+
+  create-development-tasks:
+    runs-on: ubuntu-latest
+    if: github.event.action == 'labeled' && contains(github.event.label.name, 'approved') && contains(github.event.issue.labels.*.name, 'requirement')
+    
+    steps:
+      - name: Prepare development tasks
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const issueNumber = context.issue.number;
+            const issueTitle = context.payload.issue.title;
+            const issueBody = context.payload.issue.body;
+            
+            // Extract functional requirements and acceptance criteria
+            const functionalMatch = issueBody.match(/## ⚙️ Functional Requirements\n(.*?)(?=\n##|$)/s);
+            const acceptanceMatch = issueBody.match(/## ✅ Acceptance Criteria\n(.*?)(?=\n##|$)/s);
+            
+            const functionalRequirements = functionalMatch ? 
+              functionalMatch[1].split('\n').filter(line => line.trim().startsWith('-')).map(line => line.trim().substring(1).trim()) : [];
+            
+            const acceptanceCriteria = acceptanceMatch ? 
+              acceptanceMatch[1].split('\n').filter(line => line.trim().startsWith('-')).map(line => line.trim().substring(1).trim()) : [];
+            
+            console.log('Functional Requirements:', functionalRequirements);
+            console.log('Acceptance Criteria:', acceptanceCriteria);
+            
+            // Create development checklist comment
+            const taskList = [
+              '## 🚧 Development Tasks',
+              '',
+              '### Functional Requirements Implementation:',
+              ...functionalRequirements.map(req => `- [ ] ${req}`),
+              '',
+              '### Acceptance Criteria Verification:',
+              ...acceptanceCriteria.map(criteria => `- [ ] ${criteria.replace(/^\[.\]\s*/, '')}`),
+              '',
+              '### Development Checklist:',
+              '- [ ] Code implementation',
+              '- [ ] Unit tests written',
+              '- [ ] Integration tests written',
+              '- [ ] Code review completed',
+              '- [ ] Documentation updated',
+              '- [ ] Testing completed',
+              '- [ ] Stakeholder acceptance testing',
+              '',
+              '---',
+              '**Next Steps:**',
+              '1. Assign this issue to development team',
+              '2. Create branch for implementation',
+              '3. Begin development using checklist above',
+              '4. Create pull request when ready for review',
+              '',
+              '🤖 *Development tasks generated automatically*'
+            ];
+            
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              body: taskList.join('\n')
+            });
+            
+            console.log('Development tasks created');

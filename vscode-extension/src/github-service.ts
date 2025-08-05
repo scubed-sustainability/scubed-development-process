@@ -193,6 +193,201 @@ export class GitHubService {
     }
 
     /**
+     * Check approval status of a requirement issue
+     */
+    async checkApprovalStatus(issueNumber: number): Promise<{
+        isApproved: boolean;
+        approvalCount: number;
+        totalStakeholders: number;
+        approvedBy: string[];
+        pendingApprovals: string[];
+        stakeholders: string[];
+    }> {
+        if (!this.octokit || !this.config) {
+            throw new Error('GitHub service not initialized');
+        }
+
+        try {
+            // Get issue details
+            const issue = await this.octokit.issues.get({
+                owner: this.config.owner,
+                repo: this.config.repo,
+                issue_number: issueNumber
+            });
+
+            // Extract stakeholders from issue body
+            const stakeholderMatch = issue.data.body?.match(/## 👥 Stakeholders\n(.*?)(?=\n##|$)/s);
+            if (!stakeholderMatch) {
+                return {
+                    isApproved: false,
+                    approvalCount: 0,
+                    totalStakeholders: 0,
+                    approvedBy: [],
+                    pendingApprovals: [],
+                    stakeholders: []
+                };
+            }
+
+            const stakeholders = stakeholderMatch[1]
+                .split('\n')
+                .map(line => line.trim())
+                .filter(line => line.startsWith('@'))
+                .map(line => line.substring(1)); // Remove @ symbol
+
+            if (stakeholders.length === 0) {
+                return {
+                    isApproved: false,
+                    approvalCount: 0,
+                    totalStakeholders: 0,
+                    approvedBy: [],
+                    pendingApprovals: [],
+                    stakeholders: []
+                };
+            }
+
+            // Get all comments
+            const comments = await this.octokit.issues.listComments({
+                owner: this.config.owner,
+                repo: this.config.repo,
+                issue_number: issueNumber
+            });
+
+            // Check for approval patterns in comments
+            const approvalPatterns = [
+                /✅.*approved?/i,
+                /approved?.*✅/i,
+                /lgtm/i,
+                /looks good to me/i,
+                /approve/i,
+                /👍.*approve/i,
+                /approve.*👍/i
+            ];
+
+            const approvedBy = new Set<string>();
+
+            // Check comments for approvals
+            for (const comment of comments.data) {
+                const commentBody = comment.body.toLowerCase();
+                const author = comment.user?.login;
+
+                if (author && stakeholders.includes(author)) {
+                    const hasApproval = approvalPatterns.some(pattern => pattern.test(commentBody));
+                    if (hasApproval) {
+                        approvedBy.add(author);
+                    }
+                }
+            }
+
+            // Check reactions (👍 as approval)
+            const reactions = await this.octokit.reactions.listForIssue({
+                owner: this.config.owner,
+                repo: this.config.repo,
+                issue_number: issueNumber
+            });
+
+            for (const reaction of reactions.data) {
+                if (reaction.content === '+1' && reaction.user?.login && stakeholders.includes(reaction.user.login)) {
+                    approvedBy.add(reaction.user.login);
+                }
+            }
+
+            const approvedByArray = Array.from(approvedBy);
+            const pendingApprovals = stakeholders.filter(stakeholder => !approvedBy.has(stakeholder));
+            const isApproved = pendingApprovals.length === 0;
+
+            return {
+                isApproved,
+                approvalCount: approvedByArray.length,
+                totalStakeholders: stakeholders.length,
+                approvedBy: approvedByArray,
+                pendingApprovals,
+                stakeholders
+            };
+
+        } catch (error) {
+            console.error('Failed to check approval status:', error);
+            return {
+                isApproved: false,
+                approvalCount: 0,
+                totalStakeholders: 0,
+                approvedBy: [],
+                pendingApprovals: [],
+                stakeholders: []
+            };
+        }
+    }
+
+    /**
+     * Get all requirement issues with their approval status
+     */
+    async getAllRequirementIssues(): Promise<Array<{
+        number: number;
+        title: string;
+        labels: string[];
+        status: 'pending-review' | 'approved' | 'rejected' | 'in-development';
+        approvalStatus: any;
+        url: string;
+        created_at: string;
+        updated_at: string;
+    }>> {
+        if (!this.octokit || !this.config) {
+            throw new Error('GitHub service not initialized');
+        }
+
+        try {
+            // Get all issues with 'requirement' label
+            const issues = await this.octokit.issues.listForRepo({
+                owner: this.config.owner,
+                repo: this.config.repo,
+                labels: 'requirement',
+                state: 'open',
+                sort: 'updated',
+                direction: 'desc'
+            });
+
+            const requirementIssues = [];
+
+            for (const issue of issues.data) {
+                const labels = issue.labels.map(label => 
+                    typeof label === 'string' ? label : label.name || ''
+                );
+
+                let status: 'pending-review' | 'approved' | 'rejected' | 'in-development' = 'pending-review';
+                if (labels.includes('approved')) {
+                    status = 'approved';
+                } else if (labels.includes('rejected')) {
+                    status = 'rejected';
+                } else if (labels.includes('in-development')) {
+                    status = 'in-development';
+                }
+
+                // Get approval status for pending issues
+                let approvalStatus = null;
+                if (status === 'pending-review') {
+                    approvalStatus = await this.checkApprovalStatus(issue.number);
+                }
+
+                requirementIssues.push({
+                    number: issue.number,
+                    title: issue.title,
+                    labels,
+                    status,
+                    approvalStatus,
+                    url: issue.html_url,
+                    created_at: issue.created_at,
+                    updated_at: issue.updated_at
+                });
+            }
+
+            return requirementIssues;
+
+        } catch (error) {
+            console.error('Failed to get requirement issues:', error);
+            return [];
+        }
+    }
+
+    /**
      * Update an existing issue with new requirements
      */
     async updateRequirementIssue(issueNumber: number, requirement: RequirementData): Promise<boolean> {
@@ -567,6 +762,186 @@ export class GitHubService {
         }
 
         return { owner, repo };
+    }
+
+    /**
+     * Manually trigger approval check and update status
+     */
+    async triggerApprovalCheck(issueNumber: number): Promise<boolean> {
+        if (!this.octokit || !this.config) {
+            throw new Error('GitHub service not initialized');
+        }
+
+        try {
+            const approvalStatus = await this.checkApprovalStatus(issueNumber);
+            
+            if (approvalStatus.isApproved) {
+                // Update labels
+                await this.octokit.issues.removeLabel({
+                    owner: this.config.owner,
+                    repo: this.config.repo,
+                    issue_number: issueNumber,
+                    name: 'pending-review'
+                }).catch(() => {}); // Ignore if label doesn't exist
+
+                await this.octokit.issues.addLabels({
+                    owner: this.config.owner,
+                    repo: this.config.repo,
+                    issue_number: issueNumber,
+                    labels: ['approved', 'ready-for-development']
+                });
+
+                // Add approval confirmation comment
+                await this.octokit.issues.createComment({
+                    owner: this.config.owner,
+                    repo: this.config.repo,
+                    issue_number: issueNumber,
+                    body: `## ✅ Requirements Approved!
+
+**All stakeholder approvals received:**
+${approvalStatus.approvedBy.join(', ')}
+
+**Status:** APPROVED → Ready for Development
+
+The requirements have been automatically moved to the "Approved" status and are ready for implementation.
+
+---
+🤖 *Manually triggered by S-cubed VSCode Extension*`
+                });
+
+                vscode.window.showInformationMessage(
+                    `Requirements #${issueNumber} approved! All ${approvalStatus.totalStakeholders} stakeholders have given their approval.`
+                );
+
+                return true;
+            } else {
+                vscode.window.showInformationMessage(
+                    `Requirements #${issueNumber} not yet fully approved. ${approvalStatus.approvalCount}/${approvalStatus.totalStakeholders} stakeholders have approved. Still waiting for: ${approvalStatus.pendingApprovals.join(', ')}`
+                );
+                return false;
+            }
+
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to check approval status: ${error}`);
+            return false;
+        }
+    }
+
+    /**
+     * Request re-review from specific stakeholders
+     */
+    async requestReReview(issueNumber: number, stakeholders?: string[]): Promise<boolean> {
+        if (!this.octokit || !this.config) {
+            throw new Error('GitHub service not initialized');
+        }
+
+        try {
+            const approvalStatus = await this.checkApprovalStatus(issueNumber);
+            const pendingStakeholders = stakeholders || approvalStatus.pendingApprovals;
+
+            if (pendingStakeholders.length === 0) {
+                vscode.window.showInformationMessage('All stakeholders have already approved this requirement.');
+                return true;
+            }
+
+            await this.octokit.issues.createComment({
+                owner: this.config.owner,
+                repo: this.config.repo,
+                issue_number: issueNumber,
+                body: `## 🔔 Review Reminder
+
+${pendingStakeholders.map(s => `@${s}`).join(' ')}
+
+Your review and approval is still needed for these requirements.
+
+### ✅ How to Approve:
+- Add a comment with "✅ Approved" or "LGTM"
+- Use 👍 reaction on this issue
+- Provide specific feedback if changes are needed
+
+**Current Status:** ${approvalStatus.approvalCount}/${approvalStatus.totalStakeholders} stakeholders approved
+
+---
+🤖 *Re-review requested by S-cubed VSCode Extension*`
+            });
+
+            vscode.window.showInformationMessage(
+                `Re-review requested from ${pendingStakeholders.length} stakeholder(s): ${pendingStakeholders.join(', ')}`
+            );
+
+            return true;
+
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to request re-review: ${error}`);
+            return false;
+        }
+    }
+
+    /**
+     * Move approved requirements to development status
+     */
+    async moveToInDevelopment(issueNumber: number): Promise<boolean> {
+        if (!this.octokit || !this.config) {
+            throw new Error('GitHub service not initialized');
+        }
+
+        try {
+            // Check if approved first
+            const issue = await this.octokit.issues.get({
+                owner: this.config.owner,
+                repo: this.config.repo,
+                issue_number: issueNumber
+            });
+
+            const labels = issue.data.labels.map(label => 
+                typeof label === 'string' ? label : label.name || ''
+            );
+
+            if (!labels.includes('approved')) {
+                vscode.window.showWarningMessage('Cannot move to development: Requirements not yet approved.');
+                return false;
+            }
+
+            // Update labels
+            await this.octokit.issues.removeLabel({
+                owner: this.config.owner,
+                repo: this.config.repo,
+                issue_number: issueNumber,
+                name: 'ready-for-development'
+            }).catch(() => {}); // Ignore if label doesn't exist
+
+            await this.octokit.issues.addLabels({
+                owner: this.config.owner,
+                repo: this.config.repo,
+                issue_number: issueNumber,
+                labels: ['in-development']
+            });
+
+            // Add status change comment
+            await this.octokit.issues.createComment({
+                owner: this.config.owner,
+                repo: this.config.repo,
+                issue_number: issueNumber,
+                body: `## 🚧 Development Started
+
+**Status:** Ready for Development → In Development
+
+Development work has begun on these requirements.
+
+---
+🤖 *Status updated by S-cubed VSCode Extension*`
+            });
+
+            vscode.window.showInformationMessage(
+                `Requirements #${issueNumber} moved to In Development status.`
+            );
+
+            return true;
+
+        } catch (error) {
+            vscode.window.showErrorMessage(`Failed to move to development: ${error}`);
+            return false;
+        }
     }
 
     /**

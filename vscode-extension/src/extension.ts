@@ -24,6 +24,13 @@ export function activate(context: vscode.ExtensionContext) {
     const pushToGitHubCommand = vscode.commands.registerCommand('scubed.pushToGitHub', pushRequirementsToGitHub);
     const syncWithGitHubCommand = vscode.commands.registerCommand('scubed.syncWithGitHub', syncWithGitHub);
     const checkGitHubFeedbackCommand = vscode.commands.registerCommand('scubed.checkGitHubFeedback', checkGitHubFeedback);
+    
+    // Approval workflow commands
+    const checkApprovalStatusCommand = vscode.commands.registerCommand('scubed.checkApprovalStatus', checkApprovalStatus);
+    const triggerApprovalCheckCommand = vscode.commands.registerCommand('scubed.triggerApprovalCheck', triggerApprovalCheck);
+    const requestReReviewCommand = vscode.commands.registerCommand('scubed.requestReReview', requestReReview);
+    const moveToInDevelopmentCommand = vscode.commands.registerCommand('scubed.moveToInDevelopment', moveToInDevelopment);
+    const viewRequirementsDashboardCommand = vscode.commands.registerCommand('scubed.viewRequirementsDashboard', viewRequirementsDashboard);
 
     // Register tree data providers for the activity bar views
     const projectTemplatesProvider = new ProjectTemplatesProvider();
@@ -40,7 +47,12 @@ export function activate(context: vscode.ExtensionContext) {
         checkForUpdatesCommand,
         pushToGitHubCommand,
         syncWithGitHubCommand,
-        checkGitHubFeedbackCommand
+        checkGitHubFeedbackCommand,
+        checkApprovalStatusCommand,
+        triggerApprovalCheckCommand,
+        requestReReviewCommand,
+        moveToInDevelopmentCommand,
+        viewRequirementsDashboardCommand
     );
 
     // Check for updates on startup if enabled
@@ -1109,6 +1121,232 @@ async function updateProjectMetadata(issue: any, discussion: any) {
 
     } catch (error) {
         console.error('Failed to update project metadata:', error);
+    }
+}
+
+// Approval Workflow Functions
+
+async function checkApprovalStatus() {
+    try {
+        if (!await gitHubService.initialize()) {
+            return;
+        }
+
+        const issues = await gitHubService.getAllRequirementIssues();
+        if (issues.length === 0) {
+            vscode.window.showInformationMessage('No requirement issues found.');
+            return;
+        }
+
+        const options = issues.map(issue => ({
+            label: `#${issue.number}: ${issue.title}`,
+            description: `Status: ${issue.status}`,
+            detail: issue.approvalStatus ? 
+                `${issue.approvalStatus.approvalCount}/${issue.approvalStatus.totalStakeholders} stakeholders approved` : 
+                'Click to check approval status',
+            issue
+        }));
+
+        const selected = await vscode.window.showQuickPick(options, {
+            placeHolder: 'Select requirement to check approval status'
+        });
+
+        if (selected) {
+            const approvalStatus = await gitHubService.checkApprovalStatus(selected.issue.number);
+            
+            if (approvalStatus.isApproved) {
+                vscode.window.showInformationMessage(
+                    `✅ Requirements #${selected.issue.number} APPROVED by all ${approvalStatus.totalStakeholders} stakeholders: ${approvalStatus.approvedBy.join(', ')}`
+                );
+            } else {
+                vscode.window.showInformationMessage(
+                    `⏳ Requirements #${selected.issue.number}: ${approvalStatus.approvalCount}/${approvalStatus.totalStakeholders} approved. Waiting for: ${approvalStatus.pendingApprovals.join(', ')}`
+                );
+            }
+        }
+
+    } catch (error) {
+        vscode.window.showErrorMessage(`Failed to check approval status: ${error}`);
+    }
+}
+
+async function triggerApprovalCheck() {
+    try {
+        if (!await gitHubService.initialize()) {
+            return;
+        }
+
+        const issues = await gitHubService.getAllRequirementIssues();
+        const pendingIssues = issues.filter(issue => issue.status === 'pending-review');
+
+        if (pendingIssues.length === 0) {
+            vscode.window.showInformationMessage('No pending requirement issues found.');
+            return;
+        }
+
+        const options = pendingIssues.map(issue => ({
+            label: `#${issue.number}: ${issue.title}`,
+            description: 'Pending review',
+            issue
+        }));
+
+        const selected = await vscode.window.showQuickPick(options, {
+            placeHolder: 'Select requirement to check for approval'
+        });
+
+        if (selected) {
+            const success = await gitHubService.triggerApprovalCheck(selected.issue.number);
+            if (success) {
+                vscode.window.showInformationMessage('Approval check completed! Check GitHub for updates.');
+            }
+        }
+
+    } catch (error) {
+        vscode.window.showErrorMessage(`Failed to trigger approval check: ${error}`);
+    }
+}
+
+async function requestReReview() {
+    try {
+        if (!await gitHubService.initialize()) {
+            return;
+        }
+
+        const issues = await gitHubService.getAllRequirementIssues();
+        const pendingIssues = issues.filter(issue => issue.status === 'pending-review');
+
+        if (pendingIssues.length === 0) {
+            vscode.window.showInformationMessage('No pending requirement issues found.');
+            return;
+        }
+
+        const options = pendingIssues.map(issue => ({
+            label: `#${issue.number}: ${issue.title}`,
+            description: issue.approvalStatus ? 
+                `${issue.approvalStatus.approvalCount}/${issue.approvalStatus.totalStakeholders} approved` : 
+                'Check approval status',
+            issue
+        }));
+
+        const selected = await vscode.window.showQuickPick(options, {
+            placeHolder: 'Select requirement for re-review request'
+        });
+
+        if (selected) {
+            const success = await gitHubService.requestReReview(selected.issue.number);
+            if (success) {
+                vscode.window.showInformationMessage('Re-review requested! Stakeholders have been notified.');
+            }
+        }
+
+    } catch (error) {
+        vscode.window.showErrorMessage(`Failed to request re-review: ${error}`);
+    }
+}
+
+async function moveToInDevelopment() {
+    try {
+        if (!await gitHubService.initialize()) {
+            return;
+        }
+
+        const issues = await gitHubService.getAllRequirementIssues();
+        const approvedIssues = issues.filter(issue => issue.status === 'approved');
+
+        if (approvedIssues.length === 0) {
+            vscode.window.showInformationMessage('No approved requirement issues found.');
+            return;
+        }
+
+        const options = approvedIssues.map(issue => ({
+            label: `#${issue.number}: ${issue.title}`,
+            description: 'Approved - Ready for development',
+            issue
+        }));
+
+        const selected = await vscode.window.showQuickPick(options, {
+            placeHolder: 'Select requirement to move to development'
+        });
+
+        if (selected) {
+            const success = await gitHubService.moveToInDevelopment(selected.issue.number);
+            if (success) {
+                vscode.window.showInformationMessage('Requirements moved to In Development status!');
+            }
+        }
+
+    } catch (error) {
+        vscode.window.showErrorMessage(`Failed to move to development: ${error}`);
+    }
+}
+
+async function viewRequirementsDashboard() {
+    try {
+        if (!await gitHubService.initialize()) {
+            return;
+        }
+
+        const issues = await gitHubService.getAllRequirementIssues();
+        if (issues.length === 0) {
+            vscode.window.showInformationMessage('No requirement issues found.');
+            return;
+        }
+
+        // Create dashboard content
+        const dashboardContent = [
+            '# 📋 Requirements Dashboard',
+            '',
+            `**Total Requirements:** ${issues.length}`,
+            '',
+            '## Status Overview',
+            `- 📝 Pending Review: ${issues.filter(i => i.status === 'pending-review').length}`,
+            `- ✅ Approved: ${issues.filter(i => i.status === 'approved').length}`,
+            `- 🚧 In Development: ${issues.filter(i => i.status === 'in-development').length}`,
+            `- ❌ Rejected: ${issues.filter(i => i.status === 'rejected').length}`,
+            '',
+            '## Requirements List',
+            ''
+        ];
+
+        // Group by status
+        const statusGroups = {
+            'pending-review': '📝 Pending Review',
+            'approved': '✅ Approved', 
+            'in-development': '🚧 In Development',
+            'rejected': '❌ Rejected'
+        };
+
+        for (const [status, icon] of Object.entries(statusGroups)) {
+            const statusIssues = issues.filter(issue => issue.status === status);
+            if (statusIssues.length > 0) {
+                dashboardContent.push(`### ${icon}`);
+                dashboardContent.push('');
+                
+                for (const issue of statusIssues) {
+                    let statusDetail = '';
+                    if (issue.approvalStatus && status === 'pending-review') {
+                        statusDetail = ` (${issue.approvalStatus.approvalCount}/${issue.approvalStatus.totalStakeholders} approved)`;
+                    }
+                    
+                    dashboardContent.push(`- [#${issue.number}: ${issue.title}](${issue.url})${statusDetail}`);
+                }
+                dashboardContent.push('');
+            }
+        }
+
+        dashboardContent.push('---');
+        dashboardContent.push('*Dashboard generated by S-cubed VSCode Extension*');
+
+        // Create and show document
+        const doc = await vscode.workspace.openTextDocument({
+            content: dashboardContent.join('\n'),
+            language: 'markdown'
+        });
+
+        await vscode.window.showTextDocument(doc);
+
+    } catch (error) {
+        vscode.window.showErrorMessage(`Failed to view requirements dashboard: ${error}`);
     }
 }
 
