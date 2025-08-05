@@ -1,0 +1,122 @@
+name: 📋 Requirement Request
+description: Create a new requirement for stakeholder review and approval
+title: "[REQUIREMENT] "
+labels: ["requirement", "pending-review"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 📋 Requirements Template
+        
+        Please fill out all sections below. This will ensure the approval workflow can properly identify stakeholders and process approvals.
+
+  - type: input
+    id: requirement-title
+    attributes:
+      label: Requirement Title
+      description: Brief, descriptive title for this requirement
+      placeholder: e.g., "User Authentication System"
+    validations:
+      required: true
+
+  - type: textarea
+    id: requirement-summary
+    attributes:
+      label: 📋 Requirement Summary
+      description: Brief overview of what this requirement is about
+      placeholder: One or two sentences describing the main purpose of this requirement
+    validations:
+      required: true
+
+  - type: textarea
+    id: business-objectives
+    attributes:
+      label: 🎯 Business Objectives
+      description: What business goals does this requirement address?
+      placeholder: |
+        - Improve user engagement through real-time updates
+        - Reduce user support tickets by 30%
+        - Increase daily active users by 15%
+    validations:
+      required: true
+
+  - type: textarea
+    id: functional-requirements
+    attributes:
+      label: ⚙️ Functional Requirements
+      description: What specific functionality is needed?
+      placeholder: |
+        - Real-time notification system
+        - Activity feed with filtering capabilities
+        - Customizable dashboard widgets
+    validations:
+      required: true
+
+  - type: textarea
+    id: acceptance-criteria
+    attributes:
+      label: ✅ Acceptance Criteria
+      description: How will we know this requirement is complete?
+      placeholder: |
+        - [ ] Notifications appear within 2 seconds of trigger
+        - [ ] Activity feed loads within 3 seconds
+        - [ ] Users can customize widget layout via drag-and-drop
+    validations:
+      required: true
+
+  - type: textarea
+    id: non-functional-requirements
+    attributes:
+      label: 🔧 Non-Functional Requirements
+      description: Performance, security, and other quality requirements
+      placeholder: |
+        - Page load time under 2 seconds
+        - Support 10,000 concurrent users
+        - 99.9% uptime requirement
+        - Mobile responsive design
+    validations:
+      required: false
+
+  - type: textarea
+    id: stakeholders
+    attributes:
+      label: 👥 Stakeholders
+      description: |
+        **CRITICAL**: List GitHub usernames of people who need to approve this requirement.
+        Each username should be on a separate line and start with @
+      placeholder: |
+        @business-analyst
+        @security-lead
+        @ux-designer
+      value: |
+        @avani-shah-s3
+    validations:
+      required: true
+
+  - type: dropdown
+    id: priority
+    attributes:
+      label: 📊 Priority
+      description: What is the priority level of this requirement?
+      options:
+        - High
+        - Medium
+        - Low
+      default: 1
+    validations:
+      required: true
+
+  - type: markdown
+    attributes:
+      value: |
+        ---
+        
+        **After creating this issue:**
+        1. The approval workflow will automatically trigger
+        2. Stakeholders will be notified to review and approve
+        3. Once all stakeholders approve, the issue will be marked as "approved" and ready for development
+        
+        **How stakeholders can approve:**
+        - Comment with "Approved", "LGTM", "Yes", or "OK"
+        - Use 👍 reaction on this issue
+        - Use "✅ Approved" for visual clarity
