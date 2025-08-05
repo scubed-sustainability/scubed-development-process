@@ -44,6 +44,8 @@ curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-develop
 - [🛠️ Troubleshooting](#-troubleshooting)
 
 ### 📚 **Documentation & Community**
+- [🚀 GitHub Requirements Workflow](docs/GITHUB-REQUIREMENTS-WORKFLOW.md) - Complete E2E automation guide
+- [⚙️ GitHub Setup Guide](docs/GITHUB-SETUP-GUIDE.md) - Quick setup for GitHub integration
 - [📊 Microsoft Loop Integration](#-microsoft-loop-integration)
 - [🤝 Contributing](#-contributing)
 - [🎯 Roadmap](#-roadmap)
@@ -98,6 +100,12 @@ curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-develop
 - Structured discovery workflows
 - Progress tracking templates
 
+### 🐙 **GitHub Requirements Automation** 
+- Automatic GitHub issue creation from requirements
+- Stakeholder collaboration via GitHub discussions
+- Real-time feedback notifications in VSCode
+- Complete audit trail of all requirement changes
+
 ### 📋 **Rich Snippets Library**
 - `claude-discovery` - Discovery prompt template
 - `user-story` - User story with acceptance criteria  
@@ -109,6 +117,9 @@ curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-develop
 - **S-cubed: Create New Project from Template** 
 - **S-cubed: Initialize Current Project**
 - **S-cubed: Generate Discovery Prompts**
+- **S-cubed: Push Requirements to GitHub** - NEW! 🚀
+- **S-cubed: Sync with GitHub** - NEW! 🔄
+- **S-cubed: Check GitHub Feedback** - NEW! 💬
 - **S-cubed: Open Template Gallery**
 - **S-cubed: Check for Updates**
 
@@ -121,9 +132,9 @@ curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-develop
 
 ```bash
 # Automated release (handles everything!)
-./scripts/release.sh patch "Fix activity bar icon display"   # 1.0.7 → 1.0.8
-./scripts/release.sh minor "Add new template features"       # 1.0.7 → 1.1.0  
-./scripts/release.sh major "Breaking API changes"            # 1.0.7 → 2.0.0
+./scripts/release.sh patch "Fix activity bar icon display"   # 1.0.19 → 1.0.20
+./scripts/release.sh minor "Add new template features"       # 1.0.20 → 1.1.0  
+./scripts/release.sh major "Breaking API changes"            # 1.0.20 → 2.0.0
 
 # Or using npm scripts from vscode-extension directory
 cd vscode-extension
@@ -362,6 +373,7 @@ We welcome contributions to the S-cubed Development Process!
 ## Current Status
 - ✅ Requirements Template (Complete)
 - ✅ VS Code Extension (Complete - Ready for Distribution)
+- ✅ **GitHub Requirements Automation (Complete - NEW!)** 🚀
 - ✅ Microsoft Loop Integration (Complete)
 - ✅ Claude Prompts Library (Complete)
 - ✅ Automated Release System (Complete)
@@ -382,6 +394,12 @@ We welcome contributions to the S-cubed Development Process!
 ---
 
 # 📈 Changelog
+
+## 1.0.20
+- 🔄 Version sync update - 2025-08-05
+- ✨ Latest features and improvements
+- 🔧 Enhanced version management with dynamic README updates
+- 📚 Comprehensive project review and documentation improvements
 
 ## 1.0.7
 - 🤖 Added fully automated release system - no more manual release processes!

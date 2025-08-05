@@ -3,9 +3,15 @@ import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as axios from 'axios';
 import * as yauzl from 'yauzl';
+import { GitHubService } from './github-service';
+
+let gitHubService: GitHubService;
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('S-cubed Requirements Template extension is now active!');
+
+    // Initialize GitHub service
+    gitHubService = new GitHubService();
 
     // Register commands
     const createProjectCommand = vscode.commands.registerCommand('scubed.createProject', createProject);
@@ -13,6 +19,11 @@ export function activate(context: vscode.ExtensionContext) {
     const generatePromptsCommand = vscode.commands.registerCommand('scubed.generatePrompts', generatePrompts);
     const openTemplateGalleryCommand = vscode.commands.registerCommand('scubed.openTemplateGallery', openTemplateGallery);
     const checkForUpdatesCommand = vscode.commands.registerCommand('scubed.checkForUpdates', () => checkForUpdates(context));
+    
+    // GitHub integration commands
+    const pushToGitHubCommand = vscode.commands.registerCommand('scubed.pushToGitHub', pushRequirementsToGitHub);
+    const syncWithGitHubCommand = vscode.commands.registerCommand('scubed.syncWithGitHub', syncWithGitHub);
+    const checkGitHubFeedbackCommand = vscode.commands.registerCommand('scubed.checkGitHubFeedback', checkGitHubFeedback);
 
     // Register tree data providers for the activity bar views
     const projectTemplatesProvider = new ProjectTemplatesProvider();
@@ -26,7 +37,10 @@ export function activate(context: vscode.ExtensionContext) {
         initializeProjectCommand,
         generatePromptsCommand,
         openTemplateGalleryCommand,
-        checkForUpdatesCommand
+        checkForUpdatesCommand,
+        pushToGitHubCommand,
+        syncWithGitHubCommand,
+        checkGitHubFeedbackCommand
     );
 
     // Check for updates on startup if enabled
@@ -752,6 +766,350 @@ function showUpdateInstructions(latestVersion?: string, downloadUrl?: string) {
         </div>
     </body>
     </html>`;
+}
+
+// GitHub Integration Functions
+
+async function pushRequirementsToGitHub() {
+    if (!vscode.workspace.workspaceFolders) {
+        vscode.window.showErrorMessage('No workspace folder found. Please open a project first.');
+        return;
+    }
+
+    try {
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: 'Pushing Requirements to GitHub',
+            cancellable: false
+        }, async (progress) => {
+            progress.report({ increment: 0, message: 'Initializing GitHub connection...' });
+
+            // Initialize GitHub service
+            const initialized = await gitHubService.initialize();
+            if (!initialized) {
+                return;
+            }
+
+            progress.report({ increment: 20, message: 'Finding requirements files...' });
+
+            // Find requirements files in the workspace
+            const workspaceRoot = vscode.workspace.workspaceFolders![0].uri.fsPath;
+            const requirementsFiles = await findRequirementsFiles(workspaceRoot);
+
+            if (requirementsFiles.length === 0) {
+                vscode.window.showWarningMessage('No requirements files found. Create a requirements document first.');
+                return;
+            }
+
+            progress.report({ increment: 40, message: 'Processing requirements documents...' });
+
+            // Let user select which file to push if multiple exist
+            let selectedFile: string;
+            if (requirementsFiles.length === 1) {
+                selectedFile = requirementsFiles[0];
+            } else {
+                const fileOptions = requirementsFiles.map(file => ({
+                    label: path.basename(file),
+                    description: path.relative(workspaceRoot, file),
+                    detail: file
+                }));
+
+                const selected = await vscode.window.showQuickPick(fileOptions, {
+                    placeHolder: 'Select requirements file to push to GitHub'
+                });
+
+                if (!selected) {
+                    return;
+                }
+                selectedFile = selected.detail;
+            }
+
+            progress.report({ increment: 60, message: 'Parsing requirements document...' });
+
+            // Parse the requirements file
+            const requirementData = await gitHubService.parseRequirementsFile(selectedFile);
+            if (!requirementData) {
+                vscode.window.showErrorMessage('Failed to parse requirements file.');
+                return;
+            }
+
+            progress.report({ increment: 80, message: 'Creating GitHub issue and discussion...' });
+
+            // Create GitHub issue
+            const issue = await gitHubService.createRequirementIssue(requirementData);
+            if (!issue) {
+                return;
+            }
+
+            // Create GitHub discussion
+            const discussion = await gitHubService.createRequirementDiscussion(requirementData, issue.number);
+
+            progress.report({ increment: 100, message: 'Complete!' });
+
+            // Show success message with options
+            const action = await vscode.window.showInformationMessage(
+                `Requirements pushed to GitHub successfully! 🎉\nIssue #${issue.number} created.`,
+                'View Issue',
+                'View Discussion',
+                'Update Project Metadata'
+            );
+
+            if (action === 'View Issue') {
+                vscode.env.openExternal(vscode.Uri.parse(issue.html_url));
+            } else if (action === 'View Discussion' && discussion) {
+                vscode.env.openExternal(vscode.Uri.parse(discussion.url));
+            } else if (action === 'Update Project Metadata') {
+                await updateProjectMetadata(issue, discussion);
+            }
+        });
+
+    } catch (error) {
+        vscode.window.showErrorMessage(`Failed to push requirements to GitHub: ${error}`);
+    }
+}
+
+async function syncWithGitHub() {
+    if (!vscode.workspace.workspaceFolders) {
+        vscode.window.showErrorMessage('No workspace folder found. Please open a project first.');
+        return;
+    }
+
+    try {
+        await vscode.window.withProgress({
+            location: vscode.ProgressLocation.Notification,
+            title: 'Syncing with GitHub',
+            cancellable: false
+        }, async (progress) => {
+            progress.report({ increment: 0, message: 'Initializing GitHub connection...' });
+
+            const initialized = await gitHubService.initialize();
+            if (!initialized) {
+                return;
+            }
+
+            progress.report({ increment: 50, message: 'Checking for updates...' });
+
+            // Read project metadata to find GitHub issues
+            const workspaceRoot = vscode.workspace.workspaceFolders![0].uri.fsPath;
+            const projectJsonPath = path.join(workspaceRoot, 'project.json');
+
+            if (await fs.pathExists(projectJsonPath)) {
+                const projectData = await fs.readJson(projectJsonPath);
+                
+                if (projectData.github && projectData.github.issues) {
+                    let updatesFound = 0;
+                    
+                    for (const issueData of projectData.github.issues) {
+                        const updates = await gitHubService.checkForUpdates(issueData.number);
+                        if (updates.length > 0) {
+                            updatesFound += updates.length;
+                        }
+                    }
+
+                    progress.report({ increment: 100, message: 'Sync complete!' });
+
+                    if (updatesFound > 0) {
+                        vscode.window.showInformationMessage(
+                            `Found ${updatesFound} new updates on GitHub requirements.`,
+                            'Check Feedback'
+                        ).then(action => {
+                            if (action === 'Check Feedback') {
+                                checkGitHubFeedback();
+                            }
+                        });
+                    } else {
+                        vscode.window.showInformationMessage('No new updates found on GitHub.');
+                    }
+                } else {
+                    vscode.window.showWarningMessage('No GitHub integration data found in project metadata.');
+                }
+            } else {
+                vscode.window.showWarningMessage('No project.json file found. Initialize project first.');
+            }
+        });
+
+    } catch (error) {
+        vscode.window.showErrorMessage(`Failed to sync with GitHub: ${error}`);
+    }
+}
+
+async function checkGitHubFeedback() {
+    if (!vscode.workspace.workspaceFolders) {
+        vscode.window.showErrorMessage('No workspace folder found. Please open a project first.');
+        return;
+    }
+
+    try {
+        const initialized = await gitHubService.initialize();
+        if (!initialized) {
+            return;
+        }
+
+        const workspaceRoot = vscode.workspace.workspaceFolders[0].uri.fsPath;
+        const projectJsonPath = path.join(workspaceRoot, 'project.json');
+
+        if (!(await fs.pathExists(projectJsonPath))) {
+            vscode.window.showWarningMessage('No project metadata found. Push requirements to GitHub first.');
+            return;
+        }
+
+        const projectData = await fs.readJson(projectJsonPath);
+        
+        if (!projectData.github || !projectData.github.issues) {
+            vscode.window.showWarningMessage('No GitHub integration data found. Push requirements to GitHub first.');
+            return;
+        }
+
+        // Check each GitHub issue for updates
+        const issueUpdates = [];
+        
+        for (const issueData of projectData.github.issues) {
+            const updates = await gitHubService.checkForUpdates(issueData.number);
+            if (updates.length > 0) {
+                issueUpdates.push({
+                    issue: issueData,
+                    updates: updates
+                });
+            }
+        }
+
+        if (issueUpdates.length === 0) {
+            vscode.window.showInformationMessage('No new feedback found on GitHub requirements.');
+            return;
+        }
+
+        // Show feedback summary
+        const feedbackSummary = issueUpdates.map(item => {
+            const latestUpdate = item.updates[item.updates.length - 1];
+            return {
+                label: `Issue #${item.issue.number}: ${item.updates.length} new comment(s)`,
+                description: `Latest: ${latestUpdate.user.login}`,
+                detail: latestUpdate.body?.substring(0, 100) + '...',
+                issue: item.issue
+            };
+        });
+
+        const selectedFeedback = await vscode.window.showQuickPick(feedbackSummary, {
+            placeHolder: 'Select feedback to view',
+            matchOnDescription: true,
+            matchOnDetail: true
+        });
+
+        if (selectedFeedback) {
+            // Open GitHub issue in browser
+            const config = gitHubService.getConfig();
+            if (config) {
+                const issueUrl = `https://github.com/${config.owner}/${config.repo}/issues/${selectedFeedback.issue.number}`;
+                vscode.env.openExternal(vscode.Uri.parse(issueUrl));
+            }
+        }
+
+    } catch (error) {
+        vscode.window.showErrorMessage(`Failed to check GitHub feedback: ${error}`);
+    }
+}
+
+// Helper Functions
+
+async function findRequirementsFiles(workspaceRoot: string): Promise<string[]> {
+    const requirementsFiles: string[] = [];
+    
+    try {
+        // Common locations for requirements files
+        const searchPaths = [
+            'requirements.md',
+            'docs/requirements.md',
+            'docs/requirements/',
+            'requirements/',
+            'REQUIREMENTS.md'
+        ];
+
+        for (const searchPath of searchPaths) {
+            const fullPath = path.join(workspaceRoot, searchPath);
+            
+            if (await fs.pathExists(fullPath)) {
+                const stat = await fs.stat(fullPath);
+                
+                if (stat.isFile() && path.extname(fullPath) === '.md') {
+                    requirementsFiles.push(fullPath);
+                } else if (stat.isDirectory()) {
+                    // Search for markdown files in directory
+                    const files = await fs.readdir(fullPath);
+                    for (const file of files) {
+                        if (path.extname(file) === '.md') {
+                            requirementsFiles.push(path.join(fullPath, file));
+                        }
+                    }
+                }
+            }
+        }
+
+        // Also search for any markdown files containing "requirement" in the name
+        const allFiles = await fs.readdir(workspaceRoot);
+        for (const file of allFiles) {
+            if (file.toLowerCase().includes('requirement') && path.extname(file) === '.md') {
+                const fullPath = path.join(workspaceRoot, file);
+                if (!requirementsFiles.includes(fullPath)) {
+                    requirementsFiles.push(fullPath);
+                }
+            }
+        }
+
+    } catch (error) {
+        console.error('Error finding requirements files:', error);
+    }
+
+    return requirementsFiles;
+}
+
+async function updateProjectMetadata(issue: any, discussion: any) {
+    if (!vscode.workspace.workspaceFolders) {
+        return;
+    }
+
+    try {
+        const workspaceRoot = vscode.workspace.workspaceFolders[0].uri.fsPath;
+        const projectJsonPath = path.join(workspaceRoot, 'project.json');
+
+        let projectData: any = {};
+        
+        if (await fs.pathExists(projectJsonPath)) {
+            projectData = await fs.readJson(projectJsonPath);
+        }
+
+        // Initialize GitHub integration data
+        if (!projectData.github) {
+            projectData.github = {
+                issues: [],
+                discussions: []
+            };
+        }
+
+        // Add issue data
+        projectData.github.issues.push({
+            number: issue.number,
+            url: issue.html_url,
+            title: issue.title,
+            created: new Date().toISOString()
+        });
+
+        // Add discussion data if available
+        if (discussion) {
+            projectData.github.discussions.push({
+                id: discussion.id,
+                url: discussion.url,
+                number: discussion.number,
+                created: new Date().toISOString()
+            });
+        }
+
+        await fs.writeJson(projectJsonPath, projectData, { spaces: 2 });
+        
+        vscode.window.showInformationMessage('Project metadata updated with GitHub integration info.');
+
+    } catch (error) {
+        console.error('Failed to update project metadata:', error);
+    }
 }
 
 export function deactivate() {}
