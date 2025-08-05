@@ -9,6 +9,8 @@
 curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-development-process/main/scripts/install-extension.sh | bash
 ```
 
+> **Note**: If you get a 404 error, the old install URL may be cached. Use the URL above, or wait a few minutes for GitHub's cache to update.
+
 ### 2. Create Project
 1. Open VS Code → `Ctrl+Shift+P` 
 2. Run: **"S-cubed: Create New Project from Template"**
