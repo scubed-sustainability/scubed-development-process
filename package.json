@@ -1,6 +1,6 @@
 {
   "name": "scubed-development-process",
-  "version": "1.0.39",
+  "version": "1.0.40",
   "description": "AI-powered development toolkit with project templates, requirements validation, and GitHub integration",
   "private": true,
   "scripts": {
