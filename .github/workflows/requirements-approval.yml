@@ -64,7 +64,10 @@ jobs:
               })
               .filter(name => name.length > 0); // Remove empty strings
             
-            console.log('Stakeholders:', stakeholders);
+            console.log('Raw stakeholder match:', stakeholderMatch[1]);
+            console.log('Split lines:', stakeholderMatch[1].split('\n').map(line => `"${line}"`));
+            console.log('After filtering:', stakeholderMatch[1].split('\n').map(line => line.trim()).filter(line => line.startsWith('@') || line.includes('@')));
+            console.log('Final stakeholders:', stakeholders);
             
             if (stakeholders.length === 0) {
               console.log('No valid stakeholders found after parsing');
