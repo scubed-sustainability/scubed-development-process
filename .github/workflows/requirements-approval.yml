@@ -53,9 +53,24 @@ jobs:
               return { approved: false, reason: 'No stakeholders defined' };
             }
             
-            const stakeholders = stakeholderMatch[1]
+            const stakeholderContent = stakeholderMatch[1].trim();
+            
+            // Check if the stakeholders section is actually empty (just whitespace)
+            if (!stakeholderContent || stakeholderContent.length === 0) {
+              console.log('Empty stakeholders section found');
+              // Set outputs even when no stakeholders found
+              core.setOutput('approved', 'false');
+              core.setOutput('approval-count', '0');
+              core.setOutput('total-stakeholders', '0');
+              core.setOutput('approved-by', '');
+              core.setOutput('stakeholders', '');
+              return { approved: false, reason: 'Empty stakeholders section' };
+            }
+            
+            const stakeholders = stakeholderContent
               .split(/\r?\n/)  // Handle both \n and \r\n line endings
               .map(line => line.trim())
+              .filter(line => line.length > 0) // Remove empty lines first
               .filter(line => line.startsWith('@') || line.includes('@'))
               .map(line => {
                 // Handle both @username and plain username formats - include hyphens, underscores, numbers
@@ -64,9 +79,14 @@ jobs:
               })
               .filter(name => name.length > 0); // Remove empty strings
             
+            console.log('🔍 ENHANCED DEBUG LOGGING:');
+            console.log('Issue body length:', issueBody.length);
+            console.log('Issue body (first 300 chars):', JSON.stringify(issueBody.substring(0, 300)));
+            console.log('Issue body (last 200 chars):', JSON.stringify(issueBody.substring(Math.max(0, issueBody.length - 200))));
             console.log('Raw stakeholder match:', JSON.stringify(stakeholderMatch[1]));
             console.log('Raw match length:', stakeholderMatch[1].length);
             console.log('Split lines:', stakeholderMatch[1].split(/\r?\n/).map(line => `"${line}"`));
+            console.log('Stakeholder content after trim:', JSON.stringify(stakeholderContent));
             console.log('After filtering:', stakeholderMatch[1].split(/\r?\n/).map(line => line.trim()).filter(line => line.startsWith('@') || line.includes('@')));
             console.log('Final stakeholders:', stakeholders);
             
