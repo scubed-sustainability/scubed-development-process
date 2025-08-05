@@ -17,8 +17,20 @@ suite('Extension Test Suite', () => {
     });
 
     test('Extension should register commands', async () => {
+        // Ensure extension is fully activated before checking commands
+        const extension = vscode.extensions.getExtension('scubed-solutions.scubed-development-process');
+        if (extension && !extension.isActive) {
+            await extension.activate();
+        }
+        
+        // Wait a bit for command registration to complete
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
         const commands = await vscode.commands.getCommands(true);
         const scubedCommands = commands.filter(cmd => cmd.startsWith('scubed.'));
+        
+        // Log available commands for debugging
+        console.log('Available scubed commands:', scubedCommands.sort());
         
         // Check for essential commands
         const expectedCommands = [
@@ -38,7 +50,7 @@ suite('Extension Test Suite', () => {
         ];
 
         expectedCommands.forEach(cmd => {
-            assert.ok(scubedCommands.includes(cmd), `Command ${cmd} should be registered`);
+            assert.ok(scubedCommands.includes(cmd), `Command ${cmd} should be registered. Available commands: ${scubedCommands.join(', ')}`);
         });
     });
 
