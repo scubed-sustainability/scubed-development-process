@@ -107,13 +107,18 @@ export class GitHubService {
                 'pending-review'
             ];
 
+            // Filter out invalid assignees - only use valid GitHub usernames
+            const validAssignees = requirement.stakeholders?.filter(assignee => 
+                assignee && assignee.match(/^[a-zA-Z0-9]([a-zA-Z0-9-])*[a-zA-Z0-9]$/) && !assignee.includes('-')
+            ) || [];
+
             const response = await this.octokit.issues.create({
                 owner: this.config.owner,
                 repo: this.config.repo,
                 title: `[REQUIREMENT] ${requirement.title}`,
                 body: issueBody,
                 labels,
-                assignees: requirement.stakeholders
+                assignees: validAssignees
             });
 
             return {
