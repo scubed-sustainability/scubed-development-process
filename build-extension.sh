@@ -21,6 +21,9 @@ cd vscode-extension
 echo "📦 Installing dependencies..."
 npm install
 
+echo "🔄 Syncing version across all files..."
+npm run sync-version
+
 echo "🔨 Compiling TypeScript..."
 npm run compile
 

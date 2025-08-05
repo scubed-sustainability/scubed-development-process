@@ -339,7 +339,64 @@ We welcome contributions to the S-cubed Development Process!
   - Broader community access
   - Professional marketplace presence
 
+## 🔄 Version Management & Automated Releases
+
+### 🚀 One-Command Releases
+**Fully automated**: commit → version bump → push → create GitHub release!
+
+```bash
+# Automated release (handles everything!)
+./release.sh patch "Fix activity bar icon display"   # 1.0.6 → 1.0.7
+./release.sh minor "Add new template features"       # 1.0.6 → 1.1.0  
+./release.sh major "Breaking API changes"            # 1.0.6 → 2.0.0
+
+# Or using npm scripts from vscode-extension directory
+cd vscode-extension
+npm run release:patch   # Quick patch release
+npm run release:minor   # Quick minor release
+npm run release:major   # Quick major release
+```
+
+### What the Automated Release Does
+1. ✅ **Commits your changes** with proper message format
+2. ✅ **Bumps version** in package.json (patch/minor/major)
+3. ✅ **Syncs version** across all files automatically
+4. ✅ **Creates git tag** with new version
+5. ✅ **Pushes to GitHub** (code + tags)
+6. ✅ **Triggers GitHub Actions** to build and create release
+7. ✅ **Waits and confirms** release was created successfully
+
+### Single Source of Truth
+**package.json** is the single source of truth for all versions. No more manual updates in multiple files!
+
+### What Gets Auto-Synced
+- ✅ **template-registry.json** - Version metadata
+- ✅ **extension.ts** - Runtime version reading  
+- ✅ **deploy script** - Dynamic version detection
+- ✅ **package-lock.json** - NPM auto-update
+
+### Manual Operations (Rarely Needed)
+```bash
+# Manual version sync only
+cd vscode-extension && npm run sync-version
+
+# Build with auto-sync  
+./build-extension.sh
+```
+
+**Result**: One command does EVERYTHING - no more repetitive manual work! 🎉
+
 ## 📈 Changelog
+
+### 1.0.6
+- 🎨 Updated activity bar to show "SCubed" text instead of orange square
+- 🧹 Major cleanup: Removed build artifacts, fixed version consistency
+- 🔄 Automated version management across all files
+- 📦 Standardized repository URLs and configuration
+
+### 1.0.5
+- 🔧 Fixed GitHub Actions Node.js compatibility
+- 📚 Documentation consolidation and branding updates
 
 ### 1.0.0
 - ✅ Initial release with complete functionality
