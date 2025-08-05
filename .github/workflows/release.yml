@@ -32,21 +32,23 @@ jobs:
       - name: Install root dependencies
         run: npm install
 
-      - name: Install extension dependencies
+      - name: Install extension dependencies and compile
         run: |
           cd vscode-extension
           npm install
+          npm run compile
+
+      - name: Verify compilation output
+        run: |
+          echo "🔍 Checking compilation output..."
+          ls -la vscode-extension/out/vscode-extension/src/ || echo "❌ Compilation output not found"
+          [ -f "vscode-extension/out/vscode-extension/src/validation-service.js" ] && echo "✅ validation-service.js exists" || echo "❌ validation-service.js missing"
 
       - name: Run workflow tests
         run: npm run test:workflows
 
-      - name: Run validation tests  
+      - name: Run validation tests (requires compiled extension)
         run: npm run test:validation
-
-      - name: Compile TypeScript
-        run: |
-          cd vscode-extension
-          npm run compile
 
       - name: Run extension tests
         run: |
