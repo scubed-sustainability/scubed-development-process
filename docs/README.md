@@ -11,6 +11,11 @@ This directory contains comprehensive documentation for the S-cubed Development 
 - **[Contributing Guide](contributing.md)** - Development guidelines and contribution process
 - **[Changelog](changelog.md)** - Version history and release notes
 
+### 🛡️ Quality & Validation Systems *(New - 2025-08-05)*
+- **[UX Testing Prevention Framework](UX-TESTING-PREVENTION-FRAMEWORK.md)** - Comprehensive system to prevent UX regression bugs
+- **[Pre-Release Validation System](PRE-RELEASE-VALIDATION-SYSTEM.md)** - 94 validation checks enforcing all CLAUDE.md requirements
+- **[CLAUDE.md Synchronization System](CLAUDE-MD-SYNCHRONIZATION-SYSTEM.md)** - Automated documentation-validation alignment system
+
 ### 🔄 Planned Documentation
 - **Microsoft Planner Integration Guide** - Step-by-step Planner API integration
 - **Authentication Setup Guide** - Azure AD and GitHub authentication configuration

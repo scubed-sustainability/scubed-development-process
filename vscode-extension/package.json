@@ -113,6 +113,14 @@
           "when": "workspaceFolderCount > 0"
         },
         {
+          "command": "scubed.openTemplateGallery",
+          "when": "true"
+        },
+        {
+          "command": "scubed.checkForUpdates",
+          "when": "true"
+        },
+        {
           "command": "scubed.pushToGitHub",
           "when": "workspaceFolderCount > 0"
         },
@@ -277,13 +285,15 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run compile",
+    "vscode:prepublish": "npm run validate-ux && npm run compile",
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "test": "npm run compile && node ./tests/runTest.js",
+    "validate-ux": "node scripts/validate-ux.js",
+    "pretest": "npm run validate-ux",
     "sync-version": "node scripts/sync-version.js",
     "version": "npm run sync-version && git add . && echo '🔄 Syncing versions across all files...' && echo '✅ All version changes staged'",
-    "build": "npm run sync-version && npm run compile",
+    "build": "npm run sync-version && npm run validate-ux && npm run compile",
     "release:patch": "cd .. && ./scripts/release.sh patch",
     "release:minor": "cd .. && ./scripts/release.sh minor",
     "release:major": "cd .. && ./scripts/release.sh major"

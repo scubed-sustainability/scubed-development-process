@@ -49,7 +49,8 @@ vscode-extension/tests/
     ├── validation-service.test.ts  # Requirements validation (8 tests)
     ├── github-service.test.ts  # File parsing & GitHub logic (8 tests)
     ├── commands.test.ts        # Command registration & execution (10 tests)
-    └── tree-providers.test.ts  # Activity bar & UI components (8 tests)
+    ├── tree-providers.test.ts  # Activity bar & UI components (8 tests)
+    └── ux-validation.test.ts   # UX validation framework (15+ tests) ⭐ NEW
 ```
 
 **Purpose**: Test VS Code extension functionality, UI components, and user interactions  

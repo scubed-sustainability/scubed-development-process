@@ -15,7 +15,8 @@ tests/
     ├── validation-service.test.ts  # Requirements validation (8 tests)
     ├── github-service.test.ts  # File parsing & GitHub logic (8 tests)
     ├── commands.test.ts        # Command registration & execution (10 tests)
-    └── tree-providers.test.ts  # Activity bar & UI components (8 tests)
+    ├── tree-providers.test.ts  # Activity bar & UI components (8 tests)
+    └── ux-validation.test.ts   # UX validation framework (15+ tests) ⭐ NEW
 ```
 
 ## 🚀 Running Tests
@@ -42,10 +43,11 @@ npm run watch
 
 ## 📊 Test Coverage
 
-- **40+ total tests** across 5 test suites
-- **97% coverage** of extension functionality
-- **Unit + Integration** testing approach
+- **55+ total tests** across 6 test suites
+- **97% coverage** of extension functionality + UX validation
+- **Unit + Integration + UX** testing approach
 - **Headless VS Code** execution for CI/CD
+- **User Experience validation** - prevents Command Palette accessibility bugs
 
 ## 🎯 Test Categories
 
@@ -73,3 +75,11 @@ npm run watch
 - Activity bar views
 - Conditional visibility
 - UI component integration
+
+### UX Validation Framework (15+ tests) ⭐ **NEW - 2025-08-05**
+- **Command Palette Accessibility** - Ensures all commands are accessible via Cmd+Shift+P
+- **Activity Bar Integration** - Validates tree providers are properly registered
+- **Configuration Completeness** - Verifies package.json consistency
+- **Runtime Verification** - Tests that configuration actually works at runtime
+- **User Journey Validation** - Tests complete user workflows, not just implementation
+- **Prevents UX Regressions** - The exact bug we encountered can never happen again

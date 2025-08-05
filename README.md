@@ -32,6 +32,11 @@ curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-develop
 - [🧪 Testing System](tests/TESTING-GUIDE.md) - Comprehensive testing framework
 - [🏗️ Architecture](docs/architecture.md) - System design & components
 
+### Quality & Validation *(New)*
+- [🛡️ UX Testing Framework](docs/UX-TESTING-PREVENTION-FRAMEWORK.md) - Prevent UX regression bugs
+- [🔍 Pre-Release Validation](docs/PRE-RELEASE-VALIDATION-SYSTEM.md) - Comprehensive quality gates  
+- [🔄 CLAUDE.md Synchronization](docs/CLAUDE-MD-SYNCHRONIZATION-SYSTEM.md) - Documentation-validation alignment
+
 ### Development
 - [🤝 Contributing](docs/contributing.md) - Development guidelines & setup
 - [📜 Scripts](scripts/README.md) - Build, deployment & automation tools
@@ -41,11 +46,12 @@ curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-develop
 
 ## 🛠️ Core Features
 
-- **🎨 VS Code Extension** - Project templates, AI workflows, GitHub integration
+- **🎨 VS Code Extension** - Project templates, AI workflows, GitHub integration with UX validation
 - **📋 Requirements Management** - Automated approval workflows with stakeholder validation
 - **🤖 AI Integration** - Claude-powered development assistance and discovery prompts
-- **🔄 Automated Releases** - One-command releases with version management
+- **🔄 Automated Releases** - One-command releases with comprehensive pre-release validation
 - **🧪 Testing Framework** - Comprehensive test suites with CI/CD integration
+- **🛡️ Quality Assurance** - UX validation, pre-release checks, and CLAUDE.md synchronization
 
 ---
 
@@ -59,11 +65,14 @@ curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-develop
 
 ## 📊 Quick Stats
 
-- **85+ test cases** with 94% coverage
-- **12 VS Code commands** for streamlined development
+- **85+ test cases** with 94% coverage + comprehensive UX validation  
+- **13 VS Code commands** for streamlined development (all Command Palette accessible)
+- **94 validation checks** across 8 categories in pre-release system
+- **40+ requirement patterns** analyzed for CLAUDE.md synchronization
 - **Multiple project templates** (API, Data Pipeline, Mobile, Web)
 - **Automated GitHub workflows** for requirements approval
 - **One-click installation** for team distribution
+- **Zero UX regressions** - impossible to ship broken user experience
 
 ---
 

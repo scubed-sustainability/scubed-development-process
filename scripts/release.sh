@@ -35,6 +35,17 @@ if [ ! -d ".git" ]; then
     exit 1
 fi
 
+# 🛡️ RUN PRE-RELEASE VALIDATION (ENFORCES ALL CLAUDE.MD REQUIREMENTS)
+echo -e "${BLUE}🛡️ Running comprehensive pre-release validation...${NC}"
+if ! ./scripts/pre-release-validation.sh; then
+    echo -e "${RED}❌ Pre-release validation failed!${NC}"
+    echo -e "${YELLOW}⚠️  Cannot proceed with release until all requirements are met.${NC}"
+    echo -e "${BLUE}Please fix the issues above and try again.${NC}"
+    exit 1
+fi
+echo -e "${GREEN}✅ Pre-release validation passed - ready for release!${NC}"
+echo ""
+
 # Check if working directory is clean (allow only staged changes)
 if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
     echo -e "${YELLOW}⚠️  You have unstaged changes. Let's commit them first.${NC}"

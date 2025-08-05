@@ -130,6 +130,281 @@ npm run watch
 - **Extension Tests** (`/vscode-extension/tests/`) - 40+ tests for extension functionality
 - **Overall Coverage**: 94% with 85+ total tests
 
+---
+
+## 🛡️ **MANDATORY UX TESTING FRAMEWORK** *(CRITICAL REQUIREMENT)*
+
+**⚠️ ABSOLUTE REQUIREMENT: This framework MUST be followed for all VS Code extension changes.**
+
+### **🚨 The Problem This Prevents**
+On 2025-08-05, we discovered a critical flaw in our testing approach:
+- ✅ **85+ tests, 94% coverage** - All passing
+- ✅ **Commands properly registered** - All working internally  
+- ❌ **Commands missing from Command Palette** - Users couldn't access core features
+- 💥 **Result**: "Comprehensive" tests missed critical UX bug
+
+**Root Cause**: We tested **implementation** (internal APIs) instead of **user experience** (what users see and can do).
+
+### **🎯 Mandatory UX Validation (NO EXCEPTIONS)**
+
+#### **1. Automated UX Validation** 
+**File**: `vscode-extension/scripts/validate-ux.js`
+**Status**: ✅ IMPLEMENTED (2025-08-05)
+
+**RUNS AUTOMATICALLY ON:**
+- `npm test` (before all tests)
+- `npm run build` (before building)  
+- `npm run vscode:prepublish` (before packaging)
+
+**PREVENTS:**
+- Commands defined but not accessible via Command Palette
+- Menu entries referencing non-existent commands
+- Activity bar containers without views
+- Inconsistent command categories
+- Essential commands requiring workspace when they shouldn't
+
+#### **2. UX Test Suite**
+**File**: `vscode-extension/tests/suite/ux-validation.test.ts`  
+**Status**: ✅ IMPLEMENTED (2025-08-05)
+
+**TESTS USER EXPERIENCE:**
+- Command Palette accessibility (the exact bug we missed)
+- Activity bar integration completeness
+- Configuration consistency across package.json
+- Runtime verification that config actually works
+- Complete user journey validation
+
+#### **3. Build Pipeline Integration**
+**Status**: ✅ IMPLEMENTED (2025-08-05)
+
+**ENFORCEMENT:**
+- UX validation **MUST PASS** before any build/test/package
+- Clear error messages explain exactly what's wrong
+- **IMPOSSIBLE** to ship broken UX configuration
+
+### **🚨 CRITICAL: When Making Extension Changes**
+
+**BEFORE** adding any VS Code extension features:
+1. **Run UX validation**: `npm run validate-ux`
+2. **Verify current state**: All validations must pass
+3. **Make your changes**  
+4. **Run UX validation again**: Must still pass
+5. **Add UX tests**: For any new user-facing features
+
+**AFTER** making extension changes:
+- [ ] All commands accessible via Command Palette (`Cmd+Shift+P`)
+- [ ] Activity bar sections show data (not empty)
+- [ ] New user can access essential features without workspace
+- [ ] UX validation script passes: `npm run validate-ux`
+- [ ] UX test suite passes (runs with `npm test`)
+
+### **🔧 Enhancement Protocol**
+
+**When adding NEW extension features, ALWAYS:**
+
+1. **Extend UX Validation Script** (`scripts/validate-ux.js`):
+   ```javascript  
+   // Add validation for your new feature
+   const newFeatureValidation = () => {
+     // Test what users will see and can do
+   };
+   ```
+
+2. **Add UX Tests** (`tests/suite/ux-validation.test.ts`):
+   ```typescript
+   test('New feature must be accessible to users', () => {
+     // Test user experience, not just implementation
+   });
+   ```
+
+3. **Update This Section** in CLAUDE.md:
+   - Document new validation rules
+   - Update prevention checklist
+   - Add lessons learned
+
+### **🎯 Testing Philosophy (MANDATORY)**
+
+#### **❌ FORBIDDEN: Implementation-Only Testing**
+```typescript
+// BAD: Tests internal APIs, not user experience
+test('Commands should be registered', async () => {
+    const commands = await vscode.commands.getCommands(true);
+    assert.ok(commands.includes('myCommand'));
+});
+```
+
+#### **✅ REQUIRED: User Experience Testing**  
+```typescript
+// GOOD: Tests what users can actually do
+test('Commands must be accessible via Command Palette', () => {
+    const packageJson = extension.packageJSON;
+    const commands = packageJson.contributes.commands;
+    const menus = packageJson.contributes.menus.commandPalette;
+    
+    commands.forEach(cmd => {
+        const hasMenu = menus.some(menu => menu.command === cmd.command);
+        assert.ok(hasMenu, `Users cannot access '${cmd.command}' via Command Palette`);
+    });
+});
+```
+
+### **📋 Manual Verification Checklist**
+
+Even with automated validation, **ALWAYS manually verify**:
+
+- [ ] Open Command Palette (`Cmd+Shift+P`)  
+- [ ] Type "S-cubed" - all commands appear
+- [ ] Click VS Code activity bar - "SCubed" section visible
+- [ ] Activity bar sections show data (not empty/loading)
+- [ ] New user can access core features without workspace
+- [ ] All user workflows work end-to-end
+
+### **🚀 Success Metrics**
+
+This framework is working when:
+- **Zero UX regressions** reach users
+- **Immediate feedback** when UX is broken  
+- **Impossible to ship** broken user experience
+- **All team members** understand and follow UX-first testing
+
+### **📚 Reference Documentation**
+
+- **Full Framework**: `docs/UX-TESTING-PREVENTION-FRAMEWORK.md`
+- **UX Validation Script**: `vscode-extension/scripts/validate-ux.js`
+- **UX Test Suite**: `vscode-extension/tests/suite/ux-validation.test.ts`
+
+---
+
+## 🛡️ **PRE-RELEASE VALIDATION SYSTEM** *(AUTOMATIC ENFORCEMENT)*
+
+**⚡ AUTOMATIC: This system enforces ALL CLAUDE.md requirements before every release.**
+
+### **🎯 What It Does**
+**File**: `scripts/pre-release-validation.sh`  
+**Integration**: Runs automatically in `scripts/release.sh`
+
+**VALIDATES EVERYTHING:**
+- ✅ **UX Testing Framework** - Ensures users can access all features
+- ✅ **Testing Requirements** - 95% coverage, all tests pass
+- ✅ **Package Configuration** - Proper VS Code extension setup
+- ✅ **Documentation Completeness** - All critical docs present
+- ✅ **Release Artifacts** - Extension packages correctly
+- ✅ **Version Consistency** - Synchronized across all files
+- ✅ **Security** - No sensitive information exposure
+
+### **🚨 RELEASE BLOCKING**
+If **ANY** requirement fails:
+- ❌ **Release is automatically blocked**
+- 📋 **Clear error messages** explain what's wrong
+- 🔧 **Fix suggestions** provided for common issues
+- 🛡️ **Impossible to ship** code that doesn't meet standards
+
+### **📊 Sample Output**
+```
+🛡️ S-CUBED PRE-RELEASE VALIDATION
+🔍 MANDATORY UX TESTING FRAMEWORK
+✅ UX validation passed - all commands accessible via Command Palette
+🔍 TESTING REQUIREMENTS  
+✅ All tests pass
+✅ Test coverage meets requirement: 96% (≥95%)
+...
+🎉 VALIDATION PASSED: Ready for release!
+```
+
+### **🔧 Usage**
+**Automatic** (recommended):
+```bash
+./scripts/release.sh patch "Your changes"
+# Pre-release validation runs automatically
+```
+
+**Manual** (for testing):
+```bash
+./scripts/pre-release-validation.sh
+```
+
+### **📚 Documentation**
+- **Complete System Guide**: `docs/PRE-RELEASE-VALIDATION-SYSTEM.md`
+- **Implementation**: `scripts/pre-release-validation.sh`
+
+---
+
+## 🔄 **CLAUDE.MD SYNCHRONIZATION SYSTEM** *(AUTOMATIC MAINTENANCE)*
+
+**⚡ AUTOMATIC: This system ensures pre-release validation stays synchronized with CLAUDE.md requirements.**
+
+### **🎯 The Synchronization Challenge**
+**Problem**: When CLAUDE.md requirements change, `pre-release-validation.sh` might become outdated, leading to:
+- Unenforced new requirements
+- Documentation drift  
+- False confidence in validation coverage
+
+### **🛡️ Complete Synchronization Solution**
+
+#### **1. Requirements Analysis** 
+**File**: `scripts/claude-md-requirements-tracker.js`
+- **Scans CLAUDE.md** for requirement patterns (MANDATORY, REQUIRED, CRITICAL)
+- **Extracts commands** mentioned (npm run test, lint, validate-ux)
+- **Identifies percentages** that should be validated (95% coverage)
+- **Reports gaps** between CLAUDE.md and validation script
+
+```bash
+npm run check-claude-sync
+# Analyzes 40+ requirements, reports 13 potential gaps
+```
+
+#### **2. Git Hooks Integration**
+**Setup**: `npm run setup-claude-hooks`
+- **Pre-commit**: Automatically checks when CLAUDE.md changes
+- **Post-commit**: Reminds to review validation script after CLAUDE.md commits
+- **Commit-msg**: Adds synchronization reminders to commit messages
+
+#### **3. Enhanced Pre-Release Validation**
+- **Timestamp checking** - Warns if CLAUDE.md newer than validation script
+- **Requirement scanning** - Detects new MUST/REQUIRED patterns
+- **Command detection** - Finds commands mentioned but not validated
+
+### **🔧 Usage**
+
+**One-time Setup**:
+```bash
+npm run setup-claude-hooks  # Install Git hooks
+```
+
+**Regular Use**:
+```bash  
+npm run check-claude-sync   # Check synchronization anytime
+npm run validate-all        # Complete validation + sync check
+```
+
+**Automatic**: Git hooks and release process run synchronization checks automatically.
+
+### **📊 What Gets Detected**
+- ✅ **Requirement keywords**: MANDATORY, REQUIRED, CRITICAL, MUST
+- ✅ **Commands**: npm run test, lint, validate-ux, etc.
+- ✅ **Percentages**: 95% coverage, 100% security validation
+- ✅ **Critical files**: Documentation, test files, validation scripts
+- ✅ **New patterns**: NEVER use, ALWAYS run, etc.
+
+### **🔄 Maintenance Workflow**
+1. **Add requirement** to CLAUDE.md
+2. **Git hook detects** change and reports gaps  
+3. **Update validation** script to cover new requirement
+4. **Verify synchronization** with `npm run check-claude-sync`
+
+### **📚 Complete Documentation**
+- **System Guide**: `docs/CLAUDE-MD-SYNCHRONIZATION-SYSTEM.md`
+- **Requirements Tracker**: `scripts/claude-md-requirements-tracker.js`
+- **Hook Setup**: `scripts/setup-claude-md-sync-hooks.sh`
+
+**Result**: CLAUDE.md remains authoritative while ensuring all requirements are actively validated, not just documented.
+
+---
+
+**🎯 REMEMBER: Test what users see and can do, not just what code does internally.**
+
+---
+
 ### **🎯 Testing Strategy & Requirements**
 
 #### **Coverage Requirements**
@@ -498,13 +773,21 @@ When a destructive `git reset --hard HEAD~2` accidentally destroyed several hour
 When starting a new conversation:
 1. **Reference this file** for current project state
 2. **Check recent changes** section for latest updates
-3. **Use common commands** for typical development tasks
-4. **Follow conventions** outlined in important notes
-5. **Leverage TodoWrite** for task planning and tracking
-6. **Commit frequently** - every 15-30 minutes to prevent work loss
-7. **Maintain >95% test coverage** for all new code
-8. **Review for redundancies** before each commit
-9. **NEVER use destructive git commands** - always ask first
+3. **🛡️ MANDATORY: Follow UX Testing Framework** - for ANY VS Code extension changes
+4. **Use common commands** for typical development tasks
+5. **Follow conventions** outlined in important notes
+6. **Leverage TodoWrite** for task planning and tracking
+7. **Commit frequently** - every 15-30 minutes to prevent work loss
+8. **Maintain >95% test coverage** for all new code
+9. **🚨 CRITICAL: Run UX validation** - `npm run validate-ux` before any extension changes
+10. **Review for redundancies** before each commit
+11. **NEVER use destructive git commands** - always ask first
+
+### **🎯 BEFORE Any VS Code Extension Work:**
+- [ ] Read the **MANDATORY UX TESTING FRAMEWORK** section above
+- [ ] Run `npm run validate-ux` to verify current state
+- [ ] Understand that tests must verify **user experience**, not just implementation
+- [ ] Know that UX validation automatically prevents broken configurations
 
 ---
 
