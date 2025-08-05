@@ -4,14 +4,17 @@ import * as path from 'path';
 import * as axios from 'axios';
 import * as yauzl from 'yauzl';
 import { GitHubService } from './github-service';
+import { ValidationService } from './validation-service';
 
 let gitHubService: GitHubService;
+let validationService: ValidationService;
 
 export function activate(context: vscode.ExtensionContext) {
     console.log('S-cubed Requirements Template extension is now active!');
 
-    // Initialize GitHub service
+    // Initialize services
     gitHubService = new GitHubService();
+    validationService = new ValidationService();
 
     // Register commands
     const createProjectCommand = vscode.commands.registerCommand('scubed.createProject', createProject);
@@ -813,7 +816,7 @@ async function pushRequirementsToGitHub() {
                 return;
             }
 
-            progress.report({ increment: 40, message: 'Processing requirements documents...' });
+            progress.report({ increment: 30, message: 'Processing requirements documents...' });
 
             // Let user select which file to push if multiple exist
             let selectedFile: string;
@@ -836,12 +839,34 @@ async function pushRequirementsToGitHub() {
                 selectedFile = selected.detail;
             }
 
-            progress.report({ increment: 60, message: 'Parsing requirements document...' });
+            progress.report({ increment: 40, message: 'Validating file structure...' });
+
+            // Validate file structure before parsing
+            const structureValidation = await validationService.validateFileStructure(selectedFile);
+            if (!structureValidation.isValid) {
+                const canProceed = await validationService.showValidationResults(structureValidation, path.basename(selectedFile));
+                if (!canProceed) {
+                    return;
+                }
+            }
+
+            progress.report({ increment: 50, message: 'Parsing requirements document...' });
 
             // Parse the requirements file
             const requirementData = await gitHubService.parseRequirementsFile(selectedFile);
             if (!requirementData) {
-                vscode.window.showErrorMessage('Failed to parse requirements file.');
+                vscode.window.showErrorMessage('Failed to parse requirements file. Please check the file format.');
+                return;
+            }
+
+            progress.report({ increment: 60, message: 'Validating requirements data...' });
+
+            // Validate parsed requirements data
+            const validation = await validationService.validateRequirements(requirementData);
+            const canProceed = await validationService.showValidationResults(validation, requirementData.title);
+            
+            if (!canProceed) {
+                vscode.window.showInformationMessage('Requirements push cancelled. Please fix the issues and try again.');
                 return;
             }
 
