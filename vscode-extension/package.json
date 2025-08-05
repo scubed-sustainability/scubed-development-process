@@ -2,7 +2,7 @@
   "name": "scubed-development-process",
   "displayName": "S-cubed Development Process",
   "description": "Complete AI-powered development process with multiple project templates, Claude workflows, and automated documentation",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "publisher": "scubed-solutions",
   "icon": "images/icon.png",
   "repository": {
@@ -192,7 +192,8 @@
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
     "sync-version": "node scripts/sync-version.js",
-    "version": "npm run sync-version && git add template-registry.json",
+    "version": "npm run sync-version && git add .",
+    "postversion": "echo '✅ Version updated and changes staged'",
     "build": "npm run sync-version && npm run compile",
     "release:patch": "cd .. && ./scripts/release.sh patch",
     "release:minor": "cd .. && ./scripts/release.sh minor",
