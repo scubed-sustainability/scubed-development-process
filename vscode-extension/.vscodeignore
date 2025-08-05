@@ -1,0 +1,55 @@
+# Development files
+.vscode/**
+.vscode-test/**
+src/**
+tests/**
+node_modules/**
+*.map
+.gitignore
+.gitattributes
+tsconfig.json
+webpack.config.js
+.eslintrc.json
+
+# Build artifacts
+out/tests/**
+out/test/**
+out/src/**/*.map
+
+# Development dependencies
+**/*.ts
+!out/**/*.js
+
+# Documentation
+README.md
+CHANGELOG.md
+*.md
+
+# Package files
+.vscodeignore
+.npmignore
+package-lock.json
+
+# Test files
+**/test/**
+**/tests/**
+**/*.test.*
+**/*.spec.*
+
+# Configuration files for development
+.prettierrc
+.editorconfig
+webpack.config.js
+rollup.config.js
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+*.tmp
+*.temp

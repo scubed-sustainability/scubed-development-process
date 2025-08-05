@@ -83,13 +83,19 @@ body:
       label: 👥 Stakeholders
       description: |
         **CRITICAL**: List GitHub usernames of people who need to approve this requirement.
-        Each username should be on a separate line and start with @
+        
+        **Format Requirements:**
+        - Each username on a separate line
+        - Start each username with @
+        - Use valid GitHub usernames only (1-39 characters, alphanumeric + dashes, no double dashes)
+        - File will automatically end with proper newline for parsing
       placeholder: |
         @business-analyst
         @security-lead
         @ux-designer
       value: |
         @avani-shah-s3
+        
     validations:
       required: true
 

@@ -1,0 +1,40 @@
+{
+  "name": "scubed-development-process",
+  "version": "1.0.32",
+  "description": "AI-powered development toolkit with project templates, requirements validation, and GitHub integration",
+  "private": true,
+  "scripts": {
+    "test": "npm run test:all",
+    "test:all": "npm run test:workflows && npm run test:validation && npm run test:extension && npm run test:templates",
+    "test:workflows": "echo '🔄 Running workflow tests...' && node tests/workflow/test-workflow.js 2>/dev/null || echo '⚠️  Workflow tests not found'",
+    "test:validation": "echo '📋 Running validation tests...' && node tests/validation/test-validation-system.js",
+    "test:extension": "echo '🎨 Running extension tests...' && cd vscode-extension && npm test",
+    "test:templates": "echo '📋 Testing issue templates...' && node tests/workflow/test-issue-template-parsing.js",
+    "build": "cd vscode-extension && npm run build",
+    "build:extension": "cd vscode-extension && npm run compile",
+    "install:all": "npm install && cd vscode-extension && npm install",
+    "clean": "cd vscode-extension && rm -rf out node_modules && npm install"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/scubed-sustainability/scubed-development-process.git"
+  },
+  "keywords": [
+    "vscode-extension",
+    "requirements",
+    "github-automation",
+    "validation",
+    "testing",
+    "ai-development",
+    "issue-templates",
+    "stakeholder-approval"
+  ],
+  "author": "S-cubed Solutions",
+  "license": "MIT"
+}

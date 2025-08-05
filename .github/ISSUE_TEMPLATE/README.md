@@ -32,11 +32,14 @@ The stakeholders section is **critical** for the approval workflow to function c
 - Start each username with `@`
 - **File must end with a newline character** to prevent parsing issues
 
-### Alternative Stakeholder Headers
-The workflow also supports these variations:
-- `## Stakeholders`
-- `## 👥 Stakeholders` (with extra spaces)
-- `Stakeholders:`
+### Supported Stakeholder Headers
+The workflow supports these header variations:
+- `## 👥 Stakeholders` (recommended - includes emoji)
+- `## Stakeholders` (standard format)
+- `### 👥 Stakeholders` (subsection level)
+- `### Stakeholders` (subsection without emoji)
+
+**Note**: The workflow uses flexible parsing that handles spaces and case variations.
 
 ## ⚠️ Common Issues and Solutions
 

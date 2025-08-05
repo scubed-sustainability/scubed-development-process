@@ -97,4 +97,4 @@ When adding new scripts:
 2. Make executable: `chmod +x scripts/your-script.sh`
 3. Update this README with description
 4. Add npm script if needed (in `vscode-extension/package.json`)
-5. Update main README if user-facing# Test comment
+5. Update main README if user-facing

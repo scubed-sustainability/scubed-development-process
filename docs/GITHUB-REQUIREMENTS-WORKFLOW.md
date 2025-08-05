@@ -1,6 +1,37 @@
-# GitHub Requirements Automation - Practical Workflow
+# GitHub Requirements Automation - Complete Guide
 
 **Complete E2E automation from requirements gathering to task creation**
+
+## 🚀 Quick Setup
+
+### 1. Configure GitHub Repository
+
+Add these settings to your VSCode workspace or user settings:
+
+```json
+{
+  "scubed.github.owner": "your-github-username-or-org",
+  "scubed.github.repo": "your-repository-name",
+  "scubed.github.autoSync": false,
+  "scubed.github.stakeholderTeam": "stakeholders"
+}
+```
+
+### 2. GitHub Repository Setup
+
+1. **Create a GitHub repository** (if you don't have one)
+2. **Enable Discussions** in your repository: Settings → Features → Check "Discussions"
+3. **Add stakeholders as collaborators** with appropriate permissions
+
+### 3. Available Commands
+
+- **`S-cubed: Push Requirements to GitHub`** - Create GitHub issue and discussion from requirements
+- **`S-cubed: Sync with GitHub`** - Check for new comments and updates
+- **`S-cubed: Check GitHub Feedback`** - View stakeholder feedback and comments
+
+**🔐 Authentication**: Uses VSCode's built-in GitHub authentication - no manual token setup required!
+
+---
 
 ## 🎯 Overview
 

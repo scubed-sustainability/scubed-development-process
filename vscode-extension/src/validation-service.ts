@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { RequirementData } from './github-service';
+import { isValidGitHubUsername } from '../../shared/utils/validation-utils';
 
 export interface ValidationResult {
     isValid: boolean;
@@ -139,7 +140,7 @@ export class ValidationService {
                 }
                 
                 // GitHub username validation rules
-                if (!this.isValidGitHubUsername(cleanStakeholder)) {
+                if (!isValidGitHubUsername(cleanStakeholder)) {
                     invalidStakeholders.push(cleanStakeholder);
                 } else {
                     validatedStakeholders.push(cleanStakeholder);
@@ -200,22 +201,7 @@ export class ValidationService {
         };
     }
 
-    /**
-     * Validate GitHub username format
-     */
-    private isValidGitHubUsername(username: string): boolean {
-        // GitHub username rules:
-        // - 1-39 characters
-        // - Can contain alphanumeric characters and hyphens
-        // - Cannot start or end with hyphen
-        // - Cannot have consecutive hyphens
-        const githubUsernameRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]){0,37}[a-zA-Z0-9]$|^[a-zA-Z0-9]$/;
-        
-        return githubUsernameRegex.test(username) && 
-               !username.includes('--') && // No consecutive hyphens
-               username.length >= 1 && 
-               username.length <= 39;
-    }
+    // GitHub username validation is now imported from shared utilities
 
     /**
      * Display validation results to user with actionable feedback

@@ -4,9 +4,12 @@ This directory contains comprehensive documentation for the S-cubed Development 
 
 ## 📚 Available Documentation
 
-### 🚀 Workflow Documentation
-- **[GitHub Requirements Workflow](GITHUB-REQUIREMENTS-WORKFLOW.md)** - Complete E2E automation guide for requirements management using GitHub and Planner integration
-- **[GitHub Setup Guide](GITHUB-SETUP-GUIDE.md)** - Quick setup instructions for GitHub integration features
+### 🚀 Core Documentation
+- **[Architecture](architecture.md)** - System architecture, components, and design patterns
+- **[GitHub Requirements Workflow](GITHUB-REQUIREMENTS-WORKFLOW.md)** - Complete E2E automation guide for requirements management using GitHub integration
+- **[Installation Guide](installation.md)** - Complete setup and installation instructions
+- **[Contributing Guide](contributing.md)** - Development guidelines and contribution process
+- **[Changelog](changelog.md)** - Version history and release notes
 
 ### 🔄 Planned Documentation
 - **Microsoft Planner Integration Guide** - Step-by-step Planner API integration
