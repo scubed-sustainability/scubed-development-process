@@ -9,12 +9,20 @@ export enum LogLevel {
 
 export class Logger {
     private static instance: Logger;
-    private outputChannel: vscode.OutputChannel;
+    private outputChannel: vscode.OutputChannel | undefined;
     private logLevel: LogLevel = LogLevel.INFO;
     private readonly extensionName = 'S-cubed';
 
     private constructor() {
-        this.outputChannel = vscode.window.createOutputChannel(this.extensionName);
+        // Only create output channel if running in VS Code environment
+        try {
+            if (vscode.window && vscode.window.createOutputChannel) {
+                this.outputChannel = vscode.window.createOutputChannel(this.extensionName);
+            }
+        } catch (error) {
+            // Running outside VS Code environment (e.g., in tests)
+            // Output channel will remain undefined, only console logging will work
+        }
     }
 
     public static getInstance(): Logger {
@@ -61,28 +69,40 @@ export class Logger {
         // Log to console for development
         console.log(formattedMessage, ...args);
         
-        // Log to VS Code output channel
-        this.outputChannel.appendLine(formattedMessage);
-        if (args.length > 0) {
-            this.outputChannel.appendLine(`  Args: ${JSON.stringify(args, null, 2)}`);
+        // Log to VS Code output channel (if available)
+        if (this.outputChannel) {
+            this.outputChannel.appendLine(formattedMessage);
+            if (args.length > 0) {
+                this.outputChannel.appendLine(`  Args: ${JSON.stringify(args, null, 2)}`);
+            }
         }
 
-        // Show error messages to user
-        if (level === LogLevel.ERROR) {
-            vscode.window.showErrorMessage(`${this.extensionName}: ${message}`);
+        // Show error messages to user (if in VS Code environment)
+        if (level === LogLevel.ERROR && vscode.window && vscode.window.showErrorMessage) {
+            try {
+                vscode.window.showErrorMessage(`${this.extensionName}: ${message}`);
+            } catch (error) {
+                // Ignore error if not in VS Code environment
+            }
         }
     }
 
     public show(): void {
-        this.outputChannel.show();
+        if (this.outputChannel) {
+            this.outputChannel.show();
+        }
     }
 
     public clear(): void {
-        this.outputChannel.clear();
+        if (this.outputChannel) {
+            this.outputChannel.clear();
+        }
     }
 
     public dispose(): void {
-        this.outputChannel.dispose();
+        if (this.outputChannel) {
+            this.outputChannel.dispose();
+        }
     }
 
     // Convenience methods for common operations
