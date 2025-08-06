@@ -1,18 +1,41 @@
 import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import * as axios from 'axios';
+// 🟢 GREEN: Remove axios dependency - use built-in fetch instead
 import { GitHubService } from './github-service';
 import { ValidationService } from './validation-service';
-import { logger, LogLevel } from './logger';
+import { logger } from './logger';
+import { getDisplayedVersion } from './version-utils';
+import { resolveTemplatePath, TemplateNotFoundError } from './template-utils';
+import { webviewTracker, createTrackedWebviewPanel } from './webview-tracker';
+import { AutoSyncService } from './auto-sync-service';
+import { StakeholderService } from './stakeholder-service';
+import { StatusValidationService } from './status-validation-service';
+import { RateLimitService } from './rate-limit-service';
+import { NetworkService } from './network-service';
+import { FileSystemService } from './file-system-service';
+import { ConfigurationService } from './configuration-service';
+import { GitHubWorkflowService } from './github-workflow-service';
+// 🟢 GREEN: Lazy load tree providers for better performance
 
 let gitHubService: GitHubService;
 let validationService: ValidationService;
+let autoSyncService: AutoSyncService;
+let stakeholderService: StakeholderService;
+let statusValidationService: StatusValidationService;
+let rateLimitService: RateLimitService;
+let networkService: NetworkService;
+let fileSystemService: FileSystemService;
+let configurationService: ConfigurationService;
+let githubWorkflowService: GitHubWorkflowService;
 
-export function activate(context: vscode.ExtensionContext) {
+export async function activate(context: vscode.ExtensionContext) {
     // Set up logger first
     logger.logExtensionEvent('Extension activation starting');
-    logger.info('S-cubed Extension v1.0.48 activating...');
+    
+    // Use dynamic version from package.json (TDD fix)
+    const currentVersion = getDisplayedVersion(context);
+    logger.info(`S-cubed Extension ${currentVersion} activating...`);
     
     try {
         // Initialize services
@@ -21,6 +44,44 @@ export function activate(context: vscode.ExtensionContext) {
         logger.info('GitHubService created successfully');
         validationService = new ValidationService();
         logger.info('ValidationService created successfully');
+        
+        // Initialize auto-sync service (TDD Phase 4 implementation)
+        autoSyncService = new AutoSyncService(context);
+        await autoSyncService.initialize();
+        logger.info('AutoSyncService created and initialized successfully');
+        
+        // Initialize stakeholder service (TDD Phase 4 implementation)
+        stakeholderService = new StakeholderService(gitHubService);
+        await stakeholderService.initialize();
+        logger.info('StakeholderService created and initialized successfully');
+        
+        // Initialize status validation service (TDD Phase 4 implementation)
+        statusValidationService = new StatusValidationService(gitHubService);
+        logger.info('StatusValidationService created successfully');
+        
+        // Initialize error handling services (TDD Phase 5 implementation)
+        rateLimitService = new RateLimitService();
+        logger.info('RateLimitService created successfully');
+        
+        networkService = new NetworkService(context);
+        await networkService.initialize();
+        logger.info('NetworkService created and initialized successfully');
+        
+        fileSystemService = new FileSystemService(context);
+        logger.info('FileSystemService created successfully');
+        
+        configurationService = new ConfigurationService(context);
+        await configurationService.initialize();
+        logger.info('ConfigurationService created and initialized successfully');
+        
+        // Initialize GitHub workflow service (TDD Phase 3 Epic 2)
+        githubWorkflowService = new GitHubWorkflowService(
+            context,
+            gitHubService,
+            networkService,
+            rateLimitService
+        );
+        logger.info('GitHubWorkflowService created successfully');
 
         // Register commands
         logger.info('Registering extension commands...');
@@ -39,19 +100,22 @@ export function activate(context: vscode.ExtensionContext) {
     const requestReReviewCommand = vscode.commands.registerCommand('scubed.requestReReview', requestReReview);
     const moveToInDevelopmentCommand = vscode.commands.registerCommand('scubed.moveToInDevelopment', moveToInDevelopment);
     const viewRequirementsDashboardCommand = vscode.commands.registerCommand('scubed.viewRequirementsDashboard', viewRequirementsDashboard);
+    
+    // Error handling and configuration commands
+    const showNetworkStatusCommand = vscode.commands.registerCommand('scubed.showNetworkStatus', () => networkService.checkConnectivity());
+    const showConfigurationHealthCommand = vscode.commands.registerCommand('scubed.showConfigurationHealth', () => configurationService.showConfigurationHealth());
+    
+    // Template actions (Activity Bar integration)
+    const useTemplateCommand = vscode.commands.registerCommand('scubed.useTemplate', useTemplate);
 
-        // Register tree data providers for the activity bar views
-        logger.info('Creating tree data providers...');
-        const projectTemplatesProvider = new ProjectTemplatesProvider();
-        logger.debug('ProjectTemplatesProvider created');
-        const quickActionsProvider = new QuickActionsProvider();
-        logger.debug('QuickActionsProvider created');
-        
-        logger.info('Registering tree data providers...');
-        const projectTemplatesProviderRegistration = vscode.window.registerTreeDataProvider('scubed.projectTemplates', projectTemplatesProvider);
-        logger.debug('scubed.projectTemplates provider registered');
-        const quickActionsProviderRegistration = vscode.window.registerTreeDataProvider('scubed.quickActions', quickActionsProvider);
-        logger.debug('scubed.quickActions provider registered');
+        // 🟢 GREEN: Lazy load Activity Bar tree providers for performance optimization
+        logger.info('Lazy loading Activity Bar tree providers...');
+        import('./tree-providers').then(treeProviders => {
+            treeProviders.registerTreeProviders(context);
+            logger.info('Activity Bar tree providers loaded and registered');
+        }).catch(error => {
+            logger.error('Failed to load tree providers', error);
+        });
 
         logger.info('Adding subscriptions to context...');
         context.subscriptions.push(
@@ -66,8 +130,9 @@ export function activate(context: vscode.ExtensionContext) {
         requestReReviewCommand,
         moveToInDevelopmentCommand,
         viewRequirementsDashboardCommand,
-        projectTemplatesProviderRegistration,
-        quickActionsProviderRegistration
+        showNetworkStatusCommand,
+        showConfigurationHealthCommand,
+        useTemplateCommand,
     );
 
     // Check for updates on startup if enabled
@@ -100,23 +165,28 @@ async function openTemplateGallery() {
     logger.logUserAction('Opening template gallery');
     
     try {
-        // Create a webview panel for the template gallery
-        const panel = vscode.window.createWebviewPanel(
+        // Create a trackable webview panel for the template gallery (TDD enhancement)
+        const panel = createTrackedWebviewPanel(
             'scubedTemplateGallery',
             'S-cubed Template Gallery',
             vscode.ViewColumn.One,
             {
                 enableScripts: true,
                 retainContextWhenHidden: true
-            }
+            },
+            'templateGallery' // Tracking ID for tests
         );
         
         logger.info('Template gallery webview panel created');
         panel.webview.html = getTemplateGalleryHtml();
 
-        // Handle messages from the webview
+        // Handle messages from the webview (with tracking for tests)
         panel.webview.onDidReceiveMessage(async (message) => {
             logger.debug('Received message from template gallery webview', message);
+            
+            // Record message for testing (TDD enhancement)
+            webviewTracker.recordMessage('templateGallery', message);
+            
             switch (message.command) {
                 case 'useTemplate':
                     logger.logUserAction('Template selected', { template: message.template });
@@ -135,7 +205,7 @@ async function openTemplateGallery() {
     }
 }
 
-async function useTemplate(templateType: string) {
+export async function useTemplate(templateType: string) {
     logger.logFunctionEntry('useTemplate', templateType);
     
     if (!vscode.workspace.workspaceFolders) {
@@ -152,35 +222,26 @@ async function useTemplate(templateType: string) {
         logger.info(`Applying template: ${templateType}`);
         vscode.window.showInformationMessage(`Applying ${templateType} template to your project...`);
         
+        // Use the template type directly since we only have one template
+        const actualTemplateName = templateType;
+        logger.debug('Template type:', templateType, 'mapped to:', actualTemplateName);
+        
         // Copy template files from the repository to the current workspace
-        // Try multiple possible paths for the template
-        let templatePath = path.join(__dirname, '..', '..', 'templates', 'requirements-template');
-        logger.debug('Trying template path 1:', templatePath);
-        
-        if (!await fs.pathExists(templatePath)) {
-            // Try relative to the extension root
-            templatePath = path.join(__dirname, '..', 'templates', 'requirements-template');
-            logger.debug('Trying template path 2:', templatePath);
-        }
-        if (!await fs.pathExists(templatePath)) {
-            // Try in the workspace root (if this extension is in the same repo)
-            const possibleTemplatePath = path.join(workspaceRoot, '..', 'templates', 'requirements-template');
-            logger.debug('Trying template path 3:', possibleTemplatePath);
-            if (await fs.pathExists(possibleTemplatePath)) {
-                templatePath = possibleTemplatePath;
+        // Use improved template path resolution (TDD fix)
+        let templatePath: string;
+        try {
+            templatePath = await resolveTemplatePath(actualTemplateName, __dirname);
+            logger.info('Template resolved to:', templatePath);
+        } catch (error) {
+            if (error instanceof TemplateNotFoundError) {
+                logger.error(`Template not found: ${actualTemplateName}`, error);
+                vscode.window.showErrorMessage(`Template not found: ${actualTemplateName}. Please ensure the S-cubed templates are available.`);
+                return;
             }
+            throw error; // Re-throw unexpected errors
         }
         
-        logger.info('Final template path:', templatePath);
-        
-        // Check if template exists
-        if (!await fs.pathExists(templatePath)) {
-            logger.error(`Template not found: ${templateType} at path: ${templatePath}`);
-            vscode.window.showErrorMessage(`Template not found: ${templateType}. Please ensure the S-cubed templates are available.`);
-            return;
-        }
-        
-        logger.info('Template found, asking user for confirmation');
+        logger.info('Template resolved successfully, asking user for confirmation');
         // Ask user for confirmation before applying template
         const choice = await vscode.window.showWarningMessage(
             `Apply ${templateType} template? This will add template files to your current workspace.`,
@@ -203,10 +264,17 @@ async function useTemplate(templateType: string) {
             filter: (src: string) => {
                 // Skip certain directories/files
                 const relativePath = path.relative(templatePath, src);
+                const fileName = path.basename(src);
+                
+                // Include template files and directories, but skip scripts and system files
                 const shouldInclude = !relativePath.includes('node_modules') && 
                        !relativePath.includes('.git') &&
-                       !relativePath.includes('scripts') && // Skip scripts for now
-                       !relativePath.startsWith('.');
+                       !relativePath.includes('scripts') && // Skip scripts directory
+                       !relativePath.startsWith('.') &&
+                       (relativePath === '' || // Include root directory
+                        fileName.endsWith('.md') || // Include markdown files
+                        fileName.endsWith('.json') || // Include JSON files
+                        fileName.endsWith('.txt')); // Include text files
                        
                 if (!shouldInclude) {
                     logger.debug('Skipping file during template copy:', relativePath);
@@ -286,24 +354,10 @@ function getTemplateGalleryHtml(): string {
         
         <div class="template-grid">
             <div class="template-card">
-                <h3>AI-Enabled Development</h3>
-                <p>Complete template with Claude integration, Microsoft Loop, and automated documentation workflows.</p>
-                <p><strong>Features:</strong> Discovery prompts, Loop integration, automated docs</p>
-                <button class="use-template-btn" onclick="useTemplate('ai-development')">Use This Template</button>
-            </div>
-            
-            <div class="template-card">
-                <h3>Minimal Requirements</h3>
-                <p>Lightweight template focused on requirements gathering and documentation.</p>
-                <p><strong>Features:</strong> Basic structure, requirements templates</p>
-                <button class="use-template-btn" onclick="useTemplate('minimal')">Use This Template</button>
-            </div>
-            
-            <div class="template-card">
-                <h3>Enterprise Project</h3>
-                <p>Full-featured template for large enterprise projects with compliance and governance.</p>
-                <p><strong>Features:</strong> Compliance docs, governance, stakeholder management</p>
-                <button class="use-template-btn" onclick="useTemplate('enterprise')">Use This Template</button>
+                <h3>Requirements Template</h3>
+                <p>Complete requirements gathering and documentation template with automated workflows.</p>
+                <p><strong>Features:</strong> Discovery prompts, stakeholder management, GitHub integration</p>
+                <button class="use-template-btn" onclick="useTemplate('requirements-template')">Use This Template</button>
             </div>
         </div>
 
@@ -338,84 +392,7 @@ async function showWelcomeMessage(context: vscode.ExtensionContext) {
     }
 }
 
-// Tree Data Providers for Activity Bar Views
-class ProjectTemplatesProvider implements vscode.TreeDataProvider<TemplateItem> {
-    getTreeItem(element: TemplateItem): vscode.TreeItem {
-        return element;
-    }
-
-    getChildren(element?: TemplateItem): Thenable<TemplateItem[]> {
-        if (!element) {
-            return Promise.resolve([
-                new TemplateItem('Requirements Template', 'AI-powered requirements gathering', vscode.TreeItemCollapsibleState.None, {
-                    command: 'scubed.openTemplateGallery',
-                    title: 'View Template',
-                    arguments: ['requirements']
-                }),
-                new TemplateItem('API Development', 'REST API development template', vscode.TreeItemCollapsibleState.None, {
-                    command: 'scubed.openTemplateGallery',
-                    title: 'View Template',
-                    arguments: ['api']
-                }),
-                new TemplateItem('Data Pipeline', 'Data processing template', vscode.TreeItemCollapsibleState.None, {
-                    command: 'scubed.openTemplateGallery',
-                    title: 'View Template',
-                    arguments: ['data']
-                })
-            ]);
-        }
-        return Promise.resolve([]);
-    }
-}
-
-class QuickActionsProvider implements vscode.TreeDataProvider<ActionItem> {
-    getTreeItem(element: ActionItem): vscode.TreeItem {
-        return element;
-    }
-
-    getChildren(element?: ActionItem): Thenable<ActionItem[]> {
-        if (!element) {
-            return Promise.resolve([
-                new ActionItem('Template Gallery', '$(library) Browse templates', {
-                    command: 'scubed.openTemplateGallery',
-                    title: 'Open Gallery'
-                }),
-                new ActionItem('Check for Updates', '$(cloud-download) Update extension', {
-                    command: 'scubed.checkForUpdates',
-                    title: 'Check for Updates'
-                })
-            ]);
-        }
-        return Promise.resolve([]);
-    }
-}
-
-class TemplateItem extends vscode.TreeItem {
-    constructor(
-        public readonly label: string,
-        public readonly description: string,
-        public readonly collapsibleState: vscode.TreeItemCollapsibleState,
-        public readonly command?: vscode.Command
-    ) {
-        super(label, collapsibleState);
-        this.tooltip = description;
-        this.description = description;
-        this.iconPath = new vscode.ThemeIcon('file-directory');
-    }
-}
-
-class ActionItem extends vscode.TreeItem {
-    constructor(
-        public readonly label: string,
-        public readonly description: string,
-        public readonly command?: vscode.Command
-    ) {
-        super(label, vscode.TreeItemCollapsibleState.None);
-        this.tooltip = label;
-        this.description = description;
-        this.iconPath = new vscode.ThemeIcon('play');
-    }
-}
+// 🟢 GREEN: Tree providers moved to separate tree-providers.ts file (Epic 3 implementation)
 
 // Auto-update functionality
 async function checkForUpdates(context: vscode.ExtensionContext, silent: boolean = false) {
@@ -448,14 +425,21 @@ async function checkForUpdates(context: vscode.ExtensionContext, silent: boolean
         try {
             // Check GitHub API for latest release
             const apiUrl = 'https://api.github.com/repos/scubed-sustainability/scubed-development-process/releases/latest';
-            const response = await axios.default.get(apiUrl, {
+            // 🟢 GREEN: Use built-in fetch instead of axios for lighter bundle
+            const response = await fetch(apiUrl, {
                 headers: { 'User-Agent': 'S-cubed-Extension' },
-                timeout: 10000
+                // Note: fetch doesn't have built-in timeout, but this is acceptable for update checks
             });
             
-            const latestVersion = response.data.tag_name?.replace('v', '') || packageJson.version;
-            const downloadUrl = response.data.assets?.find((asset: any) => asset.name.endsWith('.vsix'))?.browser_download_url;
-            const releaseUrl = response.data.html_url;
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const data = await response.json();
+            
+            const latestVersion = data.tag_name?.replace('v', '') || packageJson.version;
+            const downloadUrl = data.assets?.find((asset: any) => asset.name.endsWith('.vsix'))?.browser_download_url;
+            const releaseUrl = data.html_url;
             
             if (compareVersions(latestVersion, currentVersion) > 0) {
                 // New version available
@@ -658,122 +642,40 @@ function showUpdateInstructions(latestVersion?: string, downloadUrl?: string) {
 // GitHub Integration Functions
 
 async function pushRequirementsToGitHub() {
-    if (!vscode.workspace.workspaceFolders) {
-        vscode.window.showErrorMessage('No workspace folder found. Please open a project first.');
-        return;
-    }
-
     try {
         await vscode.window.withProgress({
             location: vscode.ProgressLocation.Notification,
-            title: 'Pushing Requirements to GitHub',
+            title: 'Executing GitHub Workflow',
             cancellable: false
         }, async (progress) => {
-            progress.report({ increment: 0, message: 'Initializing GitHub connection...' });
-
-            // Initialize GitHub service
-            const initialized = await gitHubService.initialize();
-            if (!initialized) {
-                return;
-            }
-
-            progress.report({ increment: 20, message: 'Finding requirements files...' });
-
-            // Find requirements files in the workspace
-            const workspaceRoot = vscode.workspace.workspaceFolders![0].uri.fsPath;
-            const requirementsFiles = await findRequirementsFiles(workspaceRoot);
-
-            if (requirementsFiles.length === 0) {
-                vscode.window.showWarningMessage('No requirements files found. Create a requirements document first.');
-                return;
-            }
-
-            progress.report({ increment: 30, message: 'Processing requirements documents...' });
-
-            // Let user select which file to push if multiple exist
-            let selectedFile: string;
-            if (requirementsFiles.length === 1) {
-                selectedFile = requirementsFiles[0];
-            } else {
-                const fileOptions = requirementsFiles.map(file => ({
-                    label: path.basename(file),
-                    description: path.relative(workspaceRoot, file),
-                    detail: file
-                }));
-
-                const selected = await vscode.window.showQuickPick(fileOptions, {
-                    placeHolder: 'Select requirements file to push to GitHub'
-                });
-
-                if (!selected) {
-                    return;
-                }
-                selectedFile = selected.detail;
-            }
-
-            progress.report({ increment: 40, message: 'Validating file structure...' });
-
-            // Validate file structure before parsing
-            const structureValidation = await validationService.validateFileStructure(selectedFile);
-            if (!structureValidation.isValid) {
-                const canProceed = await validationService.showValidationResults(structureValidation, path.basename(selectedFile));
-                if (!canProceed) {
-                    return;
-                }
-            }
-
-            progress.report({ increment: 50, message: 'Parsing requirements document...' });
-
-            // Parse the requirements file
-            const requirementData = await gitHubService.parseRequirementsFile(selectedFile);
-            if (!requirementData) {
-                vscode.window.showErrorMessage('Failed to parse requirements file. Please check the file format.');
-                return;
-            }
-
-            progress.report({ increment: 60, message: 'Validating requirements data...' });
-
-            // Validate parsed requirements data
-            const validation = await validationService.validateRequirements(requirementData);
-            const canProceed = await validationService.showValidationResults(validation, requirementData.title);
+            progress.report({ increment: 0, message: 'Starting complete GitHub integration workflow...' });
             
-            if (!canProceed) {
-                vscode.window.showInformationMessage('Requirements push cancelled. Please fix the issues and try again.');
-                return;
-            }
-
-            progress.report({ increment: 80, message: 'Creating GitHub issue and discussion...' });
-
-            // Create GitHub issue
-            const issue = await gitHubService.createRequirementIssue(requirementData);
-            if (!issue) {
-                return;
-            }
-
-            // Create GitHub discussion
-            const discussion = await gitHubService.createRequirementDiscussion(requirementData, issue.number);
-
-            progress.report({ increment: 100, message: 'Complete!' });
-
-            // Show success message with options
-            const action = await vscode.window.showInformationMessage(
-                `Requirements pushed to GitHub successfully! 🎉\nIssue #${issue.number} created.`,
-                'View Issue',
-                'View Discussion',
-                'Update Project Metadata'
+            // Execute complete workflow using the new service
+            const workflowStatus = await githubWorkflowService.executeCompleteWorkflow();
+            
+            progress.report({ increment: 100, message: 'Workflow completed successfully!' });
+            
+            const choice = await vscode.window.showInformationMessage(
+                `✅ GitHub workflow completed!\n` +
+                `Issue #${workflowStatus.issueNumber} created and tracking initiated.`,
+                'View Dashboard',
+                'View on GitHub'
             );
-
-            if (action === 'View Issue') {
-                vscode.env.openExternal(vscode.Uri.parse(issue.html_url));
-            } else if (action === 'View Discussion' && discussion) {
-                vscode.env.openExternal(vscode.Uri.parse(discussion.url));
-            } else if (action === 'Update Project Metadata') {
-                await updateProjectMetadata(issue, discussion);
+            
+            if (choice === 'View Dashboard') {
+                await checkApprovalStatus();
+            } else if (choice === 'View on GitHub') {
+                const config = vscode.workspace.getConfiguration('scubed.github');
+                const repository = config.get<string>('repository', '');
+                if (repository && workflowStatus.issueNumber) {
+                    const url = `${repository}/issues/${workflowStatus.issueNumber}`;
+                    vscode.env.openExternal(vscode.Uri.parse(url));
+                }
             }
         });
-
-    } catch (error) {
-        vscode.window.showErrorMessage(`Failed to push requirements to GitHub: ${error}`);
+    } catch (error: any) {
+        logger.error('GitHub workflow execution failed', error);
+        vscode.window.showErrorMessage(`GitHub workflow failed: ${error.message}`);
     }
 }
 
@@ -1025,226 +927,80 @@ async function updateProjectMetadata(issue: any, discussion: any) {
 
 async function checkApprovalStatus() {
     try {
-        if (!await gitHubService.initialize()) {
-            return;
-        }
-
-        const issues = await gitHubService.getAllRequirementIssues();
-        if (issues.length === 0) {
-            vscode.window.showInformationMessage('No requirement issues found.');
-            return;
-        }
-
-        const options = issues.map(issue => ({
-            label: `#${issue.number}: ${issue.title}`,
-            description: `Status: ${issue.status}`,
-            detail: issue.approvalStatus ? 
-                `${issue.approvalStatus.approvalCount}/${issue.approvalStatus.totalStakeholders} stakeholders approved` : 
-                'Click to check approval status',
-            issue
-        }));
-
-        const selected = await vscode.window.showQuickPick(options, {
-            placeHolder: 'Select requirement to check approval status'
-        });
-
-        if (selected) {
-            const approvalStatus = await gitHubService.checkApprovalStatus(selected.issue.number);
-            
-            if (approvalStatus.isApproved) {
-                vscode.window.showInformationMessage(
-                    `✅ Requirements #${selected.issue.number} APPROVED by all ${approvalStatus.totalStakeholders} stakeholders: ${approvalStatus.approvedBy.join(', ')}`
-                );
-            } else {
-                vscode.window.showInformationMessage(
-                    `⏳ Requirements #${selected.issue.number}: ${approvalStatus.approvalCount}/${approvalStatus.totalStakeholders} approved. Waiting for: ${approvalStatus.pendingApprovals.join(', ')}`
-                );
-            }
-        }
-
-    } catch (error) {
-        vscode.window.showErrorMessage(`Failed to check approval status: ${error}`);
+        // 🟢 GREEN: Updated to use GitHubWorkflowService (TDD implementation)
+        await githubWorkflowService.showApprovalDashboard();
+    } catch (error: any) {
+        logger.error('Failed to check approval status', error);
+        vscode.window.showErrorMessage(`Failed to check approval status: ${error.message}`);
     }
 }
 
 async function triggerApprovalCheck() {
     try {
-        if (!await gitHubService.initialize()) {
+        // 🟢 GREEN: Updated to use GitHubWorkflowService (TDD implementation)
+        const workflowStatus = githubWorkflowService.getCurrentWorkflowStatus();
+        if (!workflowStatus?.issueNumber) {
+            vscode.window.showErrorMessage('No active workflow found. Please push requirements to GitHub first.');
             return;
         }
 
-        const issues = await gitHubService.getAllRequirementIssues();
-        const pendingIssues = issues.filter(issue => issue.status === 'pending-review');
-
-        if (pendingIssues.length === 0) {
-            vscode.window.showInformationMessage('No pending requirement issues found.');
-            return;
-        }
-
-        const options = pendingIssues.map(issue => ({
-            label: `#${issue.number}: ${issue.title}`,
-            description: 'Pending review',
-            issue
-        }));
-
-        const selected = await vscode.window.showQuickPick(options, {
-            placeHolder: 'Select requirement to check for approval'
-        });
-
-        if (selected) {
-            const success = await gitHubService.triggerApprovalCheck(selected.issue.number);
-            if (success) {
-                vscode.window.showInformationMessage('Approval check completed! Check GitHub for updates.');
-            }
-        }
-
-    } catch (error) {
-        vscode.window.showErrorMessage(`Failed to trigger approval check: ${error}`);
+        const approvalStatus = await githubWorkflowService.getApprovalStatus();
+        
+        const message = `📊 **Approval Check Results**\n\n` +
+            `**Approved:** ${approvalStatus.approvedCount}\n` +
+            `**Changes Requested:** ${approvalStatus.changesRequestedCount}\n` +
+            `**Pending:** ${approvalStatus.pendingCount}\n` +
+            `**Total Reviewers:** ${approvalStatus.totalReviewers}`;
+            
+        await vscode.window.showInformationMessage(message, 'View Dashboard', 'OK');
+        
+    } catch (error: any) {
+        logger.error('Failed to trigger approval check', error);
+        vscode.window.showErrorMessage(`Failed to trigger approval check: ${error.message}`);
     }
 }
 
 async function requestReReview() {
     try {
-        if (!await gitHubService.initialize()) {
-            return;
-        }
-
-        const issues = await gitHubService.getAllRequirementIssues();
-        const pendingIssues = issues.filter(issue => issue.status === 'pending-review');
-
-        if (pendingIssues.length === 0) {
-            vscode.window.showInformationMessage('No pending requirement issues found.');
-            return;
-        }
-
-        const options = pendingIssues.map(issue => ({
-            label: `#${issue.number}: ${issue.title}`,
-            description: issue.approvalStatus ? 
-                `${issue.approvalStatus.approvalCount}/${issue.approvalStatus.totalStakeholders} approved` : 
-                'Check approval status',
-            issue
-        }));
-
-        const selected = await vscode.window.showQuickPick(options, {
-            placeHolder: 'Select requirement for re-review request'
-        });
-
-        if (selected) {
-            const success = await gitHubService.requestReReview(selected.issue.number);
-            if (success) {
-                vscode.window.showInformationMessage('Re-review requested! Stakeholders have been notified.');
-            }
-        }
-
-    } catch (error) {
-        vscode.window.showErrorMessage(`Failed to request re-review: ${error}`);
+        // 🟢 GREEN: Updated to use GitHubWorkflowService (TDD implementation)
+        await githubWorkflowService.requestReReview();
+    } catch (error: any) {
+        logger.error('Failed to request re-review', error);
+        vscode.window.showErrorMessage(`Failed to request re-review: ${error.message}`);
     }
 }
 
 async function moveToInDevelopment() {
     try {
-        if (!await gitHubService.initialize()) {
-            return;
-        }
-
-        const issues = await gitHubService.getAllRequirementIssues();
-        const approvedIssues = issues.filter(issue => issue.status === 'approved');
-
-        if (approvedIssues.length === 0) {
-            vscode.window.showInformationMessage('No approved requirement issues found.');
-            return;
-        }
-
-        const options = approvedIssues.map(issue => ({
-            label: `#${issue.number}: ${issue.title}`,
-            description: 'Approved - Ready for development',
-            issue
-        }));
-
-        const selected = await vscode.window.showQuickPick(options, {
-            placeHolder: 'Select requirement to move to development'
-        });
-
-        if (selected) {
-            const success = await gitHubService.moveToInDevelopment(selected.issue.number);
-            if (success) {
-                vscode.window.showInformationMessage('Requirements moved to In Development status!');
-            }
-        }
-
-    } catch (error) {
-        vscode.window.showErrorMessage(`Failed to move to development: ${error}`);
+        // 🟢 GREEN: Updated to use GitHubWorkflowService (TDD implementation)
+        await githubWorkflowService.moveToInDevelopment();
+    } catch (error: any) {
+        logger.error('Failed to move to development', error);
+        vscode.window.showErrorMessage(`Failed to move to development: ${error.message}`);
     }
 }
 
 async function viewRequirementsDashboard() {
     try {
-        if (!await gitHubService.initialize()) {
-            return;
-        }
-
-        const issues = await gitHubService.getAllRequirementIssues();
-        if (issues.length === 0) {
-            vscode.window.showInformationMessage('No requirement issues found.');
-            return;
-        }
-
-        // Create dashboard content
-        const dashboardContent = [
-            '# 📋 Requirements Dashboard',
-            '',
-            `**Total Requirements:** ${issues.length}`,
-            '',
-            '## Status Overview',
-            `- 📝 Pending Review: ${issues.filter(i => i.status === 'pending-review').length}`,
-            `- ✅ Approved: ${issues.filter(i => i.status === 'approved').length}`,
-            `- 🚧 In Development: ${issues.filter(i => i.status === 'in-development').length}`,
-            `- ❌ Rejected: ${issues.filter(i => i.status === 'rejected').length}`,
-            '',
-            '## Requirements List',
-            ''
-        ];
-
-        // Group by status
-        const statusGroups = {
-            'pending-review': '📝 Pending Review',
-            'approved': '✅ Approved', 
-            'in-development': '🚧 In Development',
-            'rejected': '❌ Rejected'
-        };
-
-        for (const [status, icon] of Object.entries(statusGroups)) {
-            const statusIssues = issues.filter(issue => issue.status === status);
-            if (statusIssues.length > 0) {
-                dashboardContent.push(`### ${icon}`);
-                dashboardContent.push('');
-                
-                for (const issue of statusIssues) {
-                    let statusDetail = '';
-                    if (issue.approvalStatus && status === 'pending-review') {
-                        statusDetail = ` (${issue.approvalStatus.approvalCount}/${issue.approvalStatus.totalStakeholders} approved)`;
-                    }
-                    
-                    dashboardContent.push(`- [#${issue.number}: ${issue.title}](${issue.url})${statusDetail}`);
-                }
-                dashboardContent.push('');
-            }
-        }
-
-        dashboardContent.push('---');
-        dashboardContent.push('*Dashboard generated by S-cubed VSCode Extension*');
-
-        // Create and show document
-        const doc = await vscode.workspace.openTextDocument({
-            content: dashboardContent.join('\n'),
-            language: 'markdown'
-        });
-
-        await vscode.window.showTextDocument(doc);
-
-    } catch (error) {
-        vscode.window.showErrorMessage(`Failed to view requirements dashboard: ${error}`);
+        // 🟢 GREEN: Updated to use GitHubWorkflowService (TDD implementation)
+        await githubWorkflowService.showApprovalDashboard();
+    } catch (error: any) {
+        logger.error('Failed to view requirements dashboard', error);
+        vscode.window.showErrorMessage(`Failed to view requirements dashboard: ${error.message}`);
     }
 }
 
-export function deactivate() {}
+export function deactivate() {
+    // Cleanup services
+    if (autoSyncService) {
+        autoSyncService.dispose();
+        logger.info('AutoSyncService disposed');
+    }
+    
+    if (stakeholderService) {
+        stakeholderService.clearCache();
+        logger.info('StakeholderService cache cleared');
+    }
+    
+    logger.logExtensionEvent('Extension deactivated');
+}

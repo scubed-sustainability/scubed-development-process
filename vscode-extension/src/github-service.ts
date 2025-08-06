@@ -400,6 +400,182 @@ export class GitHubService {
     }
 
     /**
+     * Create a GitHub issue with custom parameters
+     */
+    async createIssue(params: {
+        title: string;
+        body: string;
+        labels?: string[];
+        assignees?: string[];
+    }): Promise<GitHubIssueResponse> {
+        if (!this.octokit || !this.config) {
+            throw new Error('GitHub service not initialized');
+        }
+
+        try {
+            const response = await this.octokit.issues.create({
+                owner: this.config.owner,
+                repo: this.config.repo,
+                title: params.title,
+                body: params.body,
+                labels: params.labels || [],
+                assignees: params.assignees || []
+            });
+
+            return {
+                number: response.data.number,
+                html_url: response.data.html_url,
+                id: response.data.id
+            };
+
+        } catch (error) {
+            logger.error('Failed to create GitHub issue', error as Error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get issue comments
+     */
+    async getIssueComments(issueNumber: number): Promise<any[]> {
+        if (!this.octokit || !this.config) {
+            throw new Error('GitHub service not initialized');
+        }
+
+        try {
+            const response = await this.octokit.issues.listComments({
+                owner: this.config.owner,
+                repo: this.config.repo,
+                issue_number: issueNumber
+            });
+
+            return response.data;
+
+        } catch (error) {
+            logger.error('Failed to get issue comments', error as Error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get issue reactions
+     */
+    async getIssueReactions(issueNumber: number): Promise<any[]> {
+        if (!this.octokit || !this.config) {
+            throw new Error('GitHub service not initialized');
+        }
+
+        try {
+            const response = await this.octokit.reactions.listForIssue({
+                owner: this.config.owner,
+                repo: this.config.repo,
+                issue_number: issueNumber
+            });
+
+            return response.data;
+
+        } catch (error) {
+            logger.error('Failed to get issue reactions', error as Error);
+            throw error;
+        }
+    }
+
+    /**
+     * Create issue comment
+     */
+    async createIssueComment(issueNumber: number, body: string): Promise<any> {
+        if (!this.octokit || !this.config) {
+            throw new Error('GitHub service not initialized');
+        }
+
+        try {
+            const response = await this.octokit.issues.createComment({
+                owner: this.config.owner,
+                repo: this.config.repo,
+                issue_number: issueNumber,
+                body
+            });
+
+            return response.data;
+
+        } catch (error) {
+            logger.error('Failed to create issue comment', error as Error);
+            throw error;
+        }
+    }
+
+    /**
+     * Add labels to issue
+     */
+    async addIssueLabels(issueNumber: number, labels: string[]): Promise<void> {
+        if (!this.octokit || !this.config) {
+            throw new Error('GitHub service not initialized');
+        }
+
+        try {
+            await this.octokit.issues.addLabels({
+                owner: this.config.owner,
+                repo: this.config.repo,
+                issue_number: issueNumber,
+                labels
+            });
+
+        } catch (error) {
+            logger.error('Failed to add issue labels', error as Error);
+            throw error;
+        }
+    }
+
+    /**
+     * Remove labels from issue
+     */
+    async removeIssueLabels(issueNumber: number, labels: string[]): Promise<void> {
+        if (!this.octokit || !this.config) {
+            throw new Error('GitHub service not initialized');
+        }
+
+        try {
+            for (const label of labels) {
+                await this.octokit.issues.removeLabel({
+                    owner: this.config.owner,
+                    repo: this.config.repo,
+                    issue_number: issueNumber,
+                    name: label
+                });
+            }
+
+        } catch (error) {
+            logger.error('Failed to remove issue labels', error as Error);
+            throw error;
+        }
+    }
+
+    /**
+     * Get repository collaborators
+     */
+    async getRepositoryCollaborators(): Promise<Array<{login: string; name?: string}>> {
+        if (!this.octokit || !this.config) {
+            throw new Error('GitHub service not initialized');
+        }
+
+        try {
+            const response = await this.octokit.repos.listCollaborators({
+                owner: this.config.owner,
+                repo: this.config.repo
+            });
+
+            return response.data.map(collaborator => ({
+                login: collaborator.login,
+                name: collaborator.name || undefined
+            }));
+
+        } catch (error) {
+            logger.error('Failed to get repository collaborators', error as Error);
+            throw error;
+        }
+    }
+
+    /**
      * Update an existing issue with new requirements
      */
     async updateRequirementIssue(issueNumber: number, requirement: RequirementData): Promise<boolean> {

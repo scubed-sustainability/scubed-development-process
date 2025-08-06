@@ -6,14 +6,43 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.0.51] - 2025-08-06
+
+### Fixed
+- Extension test failures in CI environment
+- Updated extension.test.js with correct command names (pushToGitHub vs pushRequirements)
+- Fixed test script to include webpack build before testing
+- Resolved all extension activation failures in GitHub Actions CI
+
+## [1.0.50] - 2025-08-06
+
+### Fixed
+- Logger environment compatibility issues
+- Added proper null checks for VS Code API availability
+- Logger now works in both VS Code extension and Node.js test contexts
+- Resolved TypeError when running validation tests outside VS Code
+
+## [1.0.49] - 2025-08-06
+
 ### Added
-- Comprehensive testing infrastructure restoration
-- Package optimization with .vscodeignore
-- MIT license for both root and extension
+- Comprehensive Logger utility class with multiple log levels and VS Code integration
+- "Show Extension Logs" command for debugging (accessible via Command Palette)
+- Template gallery message handling with proper useTemplate function
+- Extensive test coverage for logger and template gallery features
+- Cross-environment compatibility for logging system
+
+### Fixed
+- Template gallery "Use this Template" button functionality
+- Added robust template path resolution for different deployment scenarios
+- User confirmation dialogs before template application
+
+### Removed
+- Generate Prompts functionality (broken Python dependency)
+- All references to non-functional prompt generation features
 
 ### Changed
-- Extension package size reduced by 97% (1219 → 37 files)
-- Fixed all GitHub Actions build warnings
+- Updated all services with structured logging for better troubleshooting
+- Enhanced template gallery with proper webview message handling
 
 ## [1.0.32] - 2025-08-05
 

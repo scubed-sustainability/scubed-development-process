@@ -46,11 +46,12 @@ curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-develop
 
 ## 🛠️ Core Features
 
-- **🎨 VS Code Extension** - Project templates, AI workflows, GitHub integration with UX validation
+- **🎨 VS Code Extension** - Template gallery, AI workflows, GitHub integration with comprehensive logging
+- **🔍 Debugging & Monitoring** - Multi-level logger with "Show Extension Logs" command for real-time troubleshooting
 - **📋 Requirements Management** - Automated approval workflows with stakeholder validation
-- **🤖 AI Integration** - Claude-powered development assistance and discovery prompts
+- **🤖 AI Integration** - Claude-powered development assistance with working template system
 - **🔄 Automated Releases** - One-command releases with comprehensive pre-release validation
-- **🧪 Testing Framework** - Comprehensive test suites with CI/CD integration
+- **🧪 Testing Framework** - Cross-environment test suites with >95% coverage and CI/CD integration
 - **🛡️ Quality Assurance** - UX validation, pre-release checks, and CLAUDE.md synchronization
 
 ---

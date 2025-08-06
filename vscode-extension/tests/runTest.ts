@@ -1,5 +1,6 @@
 import * as path from 'path';
 import { runTests } from '@vscode/test-electron';
+import * as fs from 'fs';
 
 async function main() {
     try {
@@ -11,28 +12,47 @@ async function main() {
         // Passed to --extensionTestsPath
         const extensionTestsPath = path.resolve(__dirname, './suite/index');
 
-        // Download VS Code, unzip it and run the integration test
-        // Use /tmp for VS Code test data to avoid socket path length issues
-        const userDataDir = '/tmp/vscode-test-' + Date.now();
+        console.log('🚀 Starting VS Code Extension Tests...');
+        console.log('Extension path:', extensionDevelopmentPath);
+        console.log('Tests path:', extensionTestsPath);
+
+        // Use system VS Code installation (resolved from earlier investigation)
+        const possiblePaths = [
+            '/Applications/Visual Studio Code.app/Contents/MacOS/Electron',
+            '/usr/local/bin/code'
+        ];
         
+        let vscodeExecutablePath = null;
+        for (const testPath of possiblePaths) {
+            if (fs.existsSync(testPath)) {
+                vscodeExecutablePath = testPath;
+                break;
+            }
+        }
+        
+        if (!vscodeExecutablePath) {
+            console.error('❌ Could not find system VS Code installation');
+            process.exit(1);
+        }
+
+        console.log('📍 Using VS Code:', vscodeExecutablePath);
+
+        // Run tests with system VS Code
         await runTests({ 
+            vscodeExecutablePath,
             extensionDevelopmentPath, 
             extensionTestsPath,
-            version: 'stable',
-            // Force use of system VS Code to avoid socket path issues
             launchArgs: [
-                '--user-data-dir', userDataDir,
                 '--disable-extensions',
-                '--skip-welcome',
-                '--skip-release-notes',
+                '--disable-workspace-trust',
                 '--no-sandbox',
-                '--disable-gpu'
-            ],
-            // Use a shorter vscode-test directory
-            vscodeExecutablePath: process.env.VSCODE_EXECUTABLE_PATH
+                '--user-data-dir=/tmp/vscode-test-data'
+            ]
         });
+        
+        console.log('✅ All tests completed successfully');
     } catch (err) {
-        console.error('Failed to run tests');
+        console.error('❌ Failed to run tests:', err);
         process.exit(1);
     }
 }

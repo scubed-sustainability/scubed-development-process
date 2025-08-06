@@ -32,6 +32,7 @@
     "*"
   ],
   "main": "./dist/extension.js",
+  "sideEffects": false,
   "contributes": {
     "commands": [
       {
@@ -88,6 +89,16 @@
         "command": "scubed.viewRequirementsDashboard",
         "title": "View Requirements Dashboard",
         "category": "S-cubed"
+      },
+      {
+        "command": "scubed.showNetworkStatus",
+        "title": "Show Network Status",
+        "category": "S-cubed"
+      },
+      {
+        "command": "scubed.showConfigurationHealth",
+        "title": "Show Configuration Health",
+        "category": "S-cubed"
       }
     ],
     "menus": {
@@ -135,6 +146,14 @@
         {
           "command": "scubed.viewRequirementsDashboard",
           "when": "workspaceFolderCount > 0"
+        },
+        {
+          "command": "scubed.showNetworkStatus",
+          "when": "true"
+        },
+        {
+          "command": "scubed.showConfigurationHealth",
+          "when": "true"
         }
       ],
       "explorer/context": []
@@ -279,6 +298,7 @@
     "release:major": "cd .. && ./scripts/release.sh major"
   },
   "devDependencies": {
+    "@types/chai": "^5.2.2",
     "@types/fs-extra": "^11.0.4",
     "@types/markdown-it": "^14.1.2",
     "@types/mocha": "^10.0.10",
@@ -286,6 +306,7 @@
     "@types/vscode": "^1.74.0",
     "@types/yauzl": "^2.10.3",
     "@vscode/test-electron": "^2.5.2",
+    "chai": "^5.2.1",
     "mocha": "^11.7.1",
     "ts-loader": "^9.5.2",
     "typescript": "^4.9.4",
@@ -295,7 +316,6 @@
   "dependencies": {
     "@octokit/auth-oauth-app": "^6.0.0",
     "@octokit/rest": "^20.0.0",
-    "axios": "^1.6.0",
     "fs-extra": "^11.0.0",
     "markdown-it": "^14.0.0",
     "yauzl": "^2.10.0"

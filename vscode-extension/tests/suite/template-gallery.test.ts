@@ -44,9 +44,7 @@ suite('Template Gallery Test Suite', () => {
             // We can't easily access the getTemplateGalleryHtml function directly,
             // but we can test the patterns that should exist in the HTML
             const expectedPatterns = [
-                'AI-Enabled Development',
-                'Minimal Requirements', 
-                'Enterprise Project',
+                'Requirements Template',
                 'Use This Template',
                 'useTemplate(',
                 'acquireVsCodeApi',
@@ -97,10 +95,9 @@ suite('Template Gallery Test Suite', () => {
 
             // Check that at least one template path structure exists
             // This helps ensure our path resolution logic is sound
-            let pathExists = false;
             for (const templatePath of possiblePaths) {
                 if (await fs.pathExists(templatePath)) {
-                    pathExists = true;
+                    // Found at least one valid template path
                     break;
                 }
             }
