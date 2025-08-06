@@ -32,9 +32,9 @@ suite('Commands Test Suite', () => {
             
             const expectedCommands = [
  
-                'scubed.generatePrompts',
                 'scubed.openTemplateGallery',
                 'scubed.checkForUpdates',
+                'scubed.showLogOutput',
                 'scubed.pushToGitHub',
                 'scubed.syncWithGitHub',
                 'scubed.checkGitHubFeedback',
@@ -88,10 +88,6 @@ suite('Commands Test Suite', () => {
             assert.ok(true, 'initializeProject command exists and can handle workspace checks');
         });
 
-        test('scubed.generatePrompts command should be available', async () => {
-            const commands = await vscode.commands.getCommands(true);
-            assert.ok(commands.includes('scubed.generatePrompts'), 'generatePrompts command should be registered');
-        });
 
         test('scubed.openTemplateGallery command should be executable', async () => {
             const commands = await vscode.commands.getCommands(true);
@@ -206,7 +202,6 @@ suite('Commands Test Suite', () => {
             ];
 
             const workspaceDependentCommands = [
-                'scubed.generatePrompts',
                 'scubed.pushToGitHub',
                 'scubed.syncWithGitHub',
                 'scubed.checkGitHubFeedback'

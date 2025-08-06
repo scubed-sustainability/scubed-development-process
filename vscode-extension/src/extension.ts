@@ -4,26 +4,29 @@ import * as path from 'path';
 import * as axios from 'axios';
 import { GitHubService } from './github-service';
 import { ValidationService } from './validation-service';
+import { logger, LogLevel } from './logger';
 
 let gitHubService: GitHubService;
 let validationService: ValidationService;
 
 export function activate(context: vscode.ExtensionContext) {
-    console.log('🚀 S-cubed Extension ACTIVATION STARTING...');
+    // Set up logger first
+    logger.logExtensionEvent('Extension activation starting');
+    logger.info('S-cubed Extension v1.0.48 activating...');
     
     try {
         // Initialize services
-        console.log('📦 Initializing services...');
+        logger.info('Initializing services...');
         gitHubService = new GitHubService();
-        console.log('✅ GitHubService created');
+        logger.info('GitHubService created successfully');
         validationService = new ValidationService();
-        console.log('✅ ValidationService created');
+        logger.info('ValidationService created successfully');
 
         // Register commands
-        console.log('🔧 Registering commands...');
-    const generatePromptsCommand = vscode.commands.registerCommand('scubed.generatePrompts', generatePrompts);
+        logger.info('Registering extension commands...');
     const openTemplateGalleryCommand = vscode.commands.registerCommand('scubed.openTemplateGallery', openTemplateGallery);
     const checkForUpdatesCommand = vscode.commands.registerCommand('scubed.checkForUpdates', () => checkForUpdates(context));
+    const showLogOutputCommand = vscode.commands.registerCommand('scubed.showLogOutput', () => logger.show());
     
     // GitHub integration commands
     const pushToGitHubCommand = vscode.commands.registerCommand('scubed.pushToGitHub', pushRequirementsToGitHub);
@@ -38,23 +41,23 @@ export function activate(context: vscode.ExtensionContext) {
     const viewRequirementsDashboardCommand = vscode.commands.registerCommand('scubed.viewRequirementsDashboard', viewRequirementsDashboard);
 
         // Register tree data providers for the activity bar views
-        console.log('🌳 Creating tree providers...');
+        logger.info('Creating tree data providers...');
         const projectTemplatesProvider = new ProjectTemplatesProvider();
-        console.log('✅ ProjectTemplatesProvider created');
+        logger.debug('ProjectTemplatesProvider created');
         const quickActionsProvider = new QuickActionsProvider();
-        console.log('✅ QuickActionsProvider created');
+        logger.debug('QuickActionsProvider created');
         
-        console.log('🔗 Registering tree providers...');
+        logger.info('Registering tree data providers...');
         const projectTemplatesProviderRegistration = vscode.window.registerTreeDataProvider('scubed.projectTemplates', projectTemplatesProvider);
-        console.log('✅ scubed.projectTemplates provider registered');
+        logger.debug('scubed.projectTemplates provider registered');
         const quickActionsProviderRegistration = vscode.window.registerTreeDataProvider('scubed.quickActions', quickActionsProvider);
-        console.log('✅ scubed.quickActions provider registered');
+        logger.debug('scubed.quickActions provider registered');
 
-        console.log('📋 Adding subscriptions to context...');
+        logger.info('Adding subscriptions to context...');
         context.subscriptions.push(
-        generatePromptsCommand,
         openTemplateGalleryCommand,
         checkForUpdatesCommand,
+        showLogOutputCommand,
         pushToGitHubCommand,
         syncWithGitHubCommand,
         checkGitHubFeedbackCommand,
@@ -69,60 +72,157 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Check for updates on startup if enabled
     const autoCheck = vscode.workspace.getConfiguration('scubed').get<boolean>('autoCheckUpdates', true);
+    logger.debug('Auto-check updates setting:', autoCheck);
     if (autoCheck) {
-        // Delay the check to avoid startup delays
+        logger.info('Scheduling automatic update check in 5 seconds...');
         setTimeout(() => checkForUpdates(context, true), 5000);
     }
 
         // Show welcome message on first install
         const hasShownWelcome = context.globalState.get('scubed.hasShownWelcome', false);
+        logger.debug('Has shown welcome message:', hasShownWelcome);
         if (!hasShownWelcome) {
+            logger.info('Showing welcome message for first-time user');
             showWelcomeMessage(context);
         }
         
-        console.log('🎉 S-cubed extension activation COMPLETED successfully!');
+        logger.logExtensionEvent('Extension activation completed successfully');
         
     } catch (error) {
-        console.error('💥 EXTENSION ACTIVATION FAILED:', error);
-        vscode.window.showErrorMessage(`S-cubed extension failed to activate: ${error}`);
+        logger.error('Extension activation failed', error as Error);
     }
 }
 
 
-async function generatePrompts() {
+
+async function openTemplateGallery() {
+    logger.logFunctionEntry('openTemplateGallery');
+    logger.logUserAction('Opening template gallery');
+    
+    try {
+        // Create a webview panel for the template gallery
+        const panel = vscode.window.createWebviewPanel(
+            'scubedTemplateGallery',
+            'S-cubed Template Gallery',
+            vscode.ViewColumn.One,
+            {
+                enableScripts: true,
+                retainContextWhenHidden: true
+            }
+        );
+        
+        logger.info('Template gallery webview panel created');
+        panel.webview.html = getTemplateGalleryHtml();
+
+        // Handle messages from the webview
+        panel.webview.onDidReceiveMessage(async (message) => {
+            logger.debug('Received message from template gallery webview', message);
+            switch (message.command) {
+                case 'useTemplate':
+                    logger.logUserAction('Template selected', { template: message.template });
+                    await useTemplate(message.template);
+                    panel.dispose(); // Close the gallery after selection
+                    logger.debug('Template gallery panel disposed');
+                    break;
+                default:
+                    logger.warn('Unknown command received from template gallery', message.command);
+            }
+        });
+        
+        logger.logFunctionExit('openTemplateGallery');
+    } catch (error) {
+        logger.error('Failed to open template gallery', error as Error);
+    }
+}
+
+async function useTemplate(templateType: string) {
+    logger.logFunctionEntry('useTemplate', templateType);
+    
     if (!vscode.workspace.workspaceFolders) {
+        logger.warn('No workspace folder found when trying to apply template');
         vscode.window.showErrorMessage('No workspace folder found. Please open a project first.');
         return;
     }
 
     const workspaceRoot = vscode.workspace.workspaceFolders[0].uri.fsPath;
+    logger.debug('Using workspace root:', workspaceRoot);
     
     try {
-        const terminal = vscode.window.createTerminal('S-cubed Generate Prompts');
-        const scriptPath = path.join(workspaceRoot, 'scripts', 'generate_prompts.py');
-        terminal.sendText(`python "${scriptPath}"`);
-        terminal.show();
-
-        vscode.window.showInformationMessage('Generating discovery prompts... Check the terminal for progress.');
+        // Show information about the template being applied
+        logger.info(`Applying template: ${templateType}`);
+        vscode.window.showInformationMessage(`Applying ${templateType} template to your project...`);
+        
+        // Copy template files from the repository to the current workspace
+        // Try multiple possible paths for the template
+        let templatePath = path.join(__dirname, '..', '..', 'templates', 'requirements-template');
+        logger.debug('Trying template path 1:', templatePath);
+        
+        if (!await fs.pathExists(templatePath)) {
+            // Try relative to the extension root
+            templatePath = path.join(__dirname, '..', 'templates', 'requirements-template');
+            logger.debug('Trying template path 2:', templatePath);
+        }
+        if (!await fs.pathExists(templatePath)) {
+            // Try in the workspace root (if this extension is in the same repo)
+            const possibleTemplatePath = path.join(workspaceRoot, '..', 'templates', 'requirements-template');
+            logger.debug('Trying template path 3:', possibleTemplatePath);
+            if (await fs.pathExists(possibleTemplatePath)) {
+                templatePath = possibleTemplatePath;
+            }
+        }
+        
+        logger.info('Final template path:', templatePath);
+        
+        // Check if template exists
+        if (!await fs.pathExists(templatePath)) {
+            logger.error(`Template not found: ${templateType} at path: ${templatePath}`);
+            vscode.window.showErrorMessage(`Template not found: ${templateType}. Please ensure the S-cubed templates are available.`);
+            return;
+        }
+        
+        logger.info('Template found, asking user for confirmation');
+        // Ask user for confirmation before applying template
+        const choice = await vscode.window.showWarningMessage(
+            `Apply ${templateType} template? This will add template files to your current workspace.`,
+            'Apply Template',
+            'Cancel'
+        );
+        
+        logger.debug('User choice for template application:', choice);
+        if (choice !== 'Apply Template') {
+            logger.info('User cancelled template application');
+            return;
+        }
+        
+        // Copy template files to workspace
+        logger.info('Starting template file copy operation');
+        logger.logFileOperation('copy', `${templatePath} -> ${workspaceRoot}`);
+        
+        await fs.copy(templatePath, workspaceRoot, {
+            overwrite: false, // Don't overwrite existing files
+            filter: (src: string) => {
+                // Skip certain directories/files
+                const relativePath = path.relative(templatePath, src);
+                const shouldInclude = !relativePath.includes('node_modules') && 
+                       !relativePath.includes('.git') &&
+                       !relativePath.includes('scripts') && // Skip scripts for now
+                       !relativePath.startsWith('.');
+                       
+                if (!shouldInclude) {
+                    logger.debug('Skipping file during template copy:', relativePath);
+                }
+                return shouldInclude;
+            }
+        });
+        
+        logger.info(`Template ${templateType} applied successfully`);
+        vscode.window.showInformationMessage(`✅ ${templateType} template applied successfully! Template files have been added to your workspace.`);
+        
+        logger.logFunctionExit('useTemplate', { success: true, templateType });
         
     } catch (error) {
-        vscode.window.showErrorMessage(`Failed to generate prompts: ${error}`);
+        logger.error('Failed to apply template', error as Error, { templateType });
     }
-}
-
-async function openTemplateGallery() {
-    // Create a webview panel for the template gallery
-    const panel = vscode.window.createWebviewPanel(
-        'scubedTemplateGallery',
-        'S-cubed Template Gallery',
-        vscode.ViewColumn.One,
-        {
-            enableScripts: true,
-            retainContextWhenHidden: true
-        }
-    );
-
-    panel.webview.html = getTemplateGalleryHtml();
 }
 
 function getTemplateGalleryHtml(): string {
@@ -276,10 +376,6 @@ class QuickActionsProvider implements vscode.TreeDataProvider<ActionItem> {
     getChildren(element?: ActionItem): Thenable<ActionItem[]> {
         if (!element) {
             return Promise.resolve([
-                new ActionItem('Generate Prompts', '$(comment-discussion) Create Claude prompts', {
-                    command: 'scubed.generatePrompts',
-                    title: 'Generate Prompts'
-                }),
                 new ActionItem('Template Gallery', '$(library) Browse templates', {
                     command: 'scubed.openTemplateGallery',
                     title: 'Open Gallery'

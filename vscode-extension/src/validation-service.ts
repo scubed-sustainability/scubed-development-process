@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 import { RequirementData } from './github-service';
 import { isValidGitHubUsername } from '../../shared/utils/validation-utils';
+import { logger } from './logger';
 
 export interface ValidationResult {
     isValid: boolean;
@@ -26,6 +27,7 @@ export class ValidationService {
      * Validate requirements data before pushing to GitHub
      */
     async validateRequirements(requirement: RequirementData): Promise<ValidationResult> {
+        logger.logFunctionEntry('ValidationService.validateRequirements', requirement.title);
         const errors: ValidationError[] = [];
         const warnings: ValidationWarning[] = [];
 
@@ -193,6 +195,21 @@ export class ValidationService {
         }
 
         const isValid = errors.length === 0;
+        
+        logger.info(`Validation completed for '${requirement.title}': ${isValid ? 'VALID' : 'INVALID'}`, {
+            errors: errors.length,
+            warnings: warnings.length
+        });
+        
+        if (errors.length > 0) {
+            logger.warn('Validation errors found:', errors.map(e => `${e.field}: ${e.message}`));
+        }
+        
+        if (warnings.length > 0) {
+            logger.debug('Validation warnings found:', warnings.map(w => `${w.field}: ${w.message}`));
+        }
+
+        logger.logFunctionExit('ValidationService.validateRequirements', { isValid, errorCount: errors.length, warningCount: warnings.length });
 
         return {
             isValid,

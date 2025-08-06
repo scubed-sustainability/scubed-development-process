@@ -76,7 +76,7 @@ suite('Tree Providers Test Suite', () => {
         // Test that tree items have valid commands that can be executed
         const commands = await vscode.commands.getCommands(true);
         const requiredCommands = [
-            'scubed.generatePrompts'
+            'scubed.openTemplateGallery'
         ];
 
         requiredCommands.forEach(cmd => {

@@ -35,11 +35,6 @@
   "contributes": {
     "commands": [
       {
-        "command": "scubed.generatePrompts",
-        "title": "Generate Discovery Prompts",
-        "category": "S-cubed"
-      },
-      {
         "command": "scubed.openTemplateGallery",
         "title": "Open Template Gallery",
         "category": "S-cubed"
@@ -47,6 +42,11 @@
       {
         "command": "scubed.checkForUpdates",
         "title": "Check for Updates",
+        "category": "S-cubed"
+      },
+      {
+        "command": "scubed.showLogOutput",
+        "title": "Show Extension Logs",
         "category": "S-cubed"
       },
       {
@@ -93,15 +93,15 @@
     "menus": {
       "commandPalette": [
         {
-          "command": "scubed.generatePrompts",
-          "when": "workspaceFolderCount > 0"
-        },
-        {
           "command": "scubed.openTemplateGallery",
           "when": "true"
         },
         {
           "command": "scubed.checkForUpdates",
+          "when": "true"
+        },
+        {
+          "command": "scubed.showLogOutput",
           "when": "true"
         },
         {

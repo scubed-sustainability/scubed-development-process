@@ -3,6 +3,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as MarkdownIt from 'markdown-it';
+import { logger } from './logger';
 
 export interface GitHubConfig {
     owner: string;
@@ -40,40 +41,51 @@ export class GitHubService {
     private md: MarkdownIt;
 
     constructor() {
+        logger.info('GitHubService constructor called');
         this.md = new (MarkdownIt as any)();
+        logger.debug('MarkdownIt instance initialized');
     }
 
     /**
      * Initialize GitHub service with authentication
      */
     async initialize(): Promise<boolean> {
+        logger.logFunctionEntry('GitHubService.initialize');
         try {
             // Try to detect GitHub repository automatically
+            logger.info('Attempting to detect GitHub repository...');
             const repoInfo = await this.detectGitHubRepository();
             
             if (!repoInfo) {
+                logger.warn('Could not detect GitHub repository from workspace');
                 vscode.window.showErrorMessage(
                     'Could not detect GitHub repository. Please ensure your project is connected to a GitHub repository or configure scubed.github.owner and scubed.github.repo in settings.'
                 );
                 return false;
             }
+            
+            logger.info('GitHub repository detected:', repoInfo);
 
             // Authenticate with GitHub using VS Code's built-in authentication
+            logger.info('Attempting GitHub authentication...');
             const session = await vscode.authentication.getSession('github', ['repo', 'write:discussion'], {
                 createIfNone: true
             });
 
             if (!session) {
+                logger.error('GitHub authentication failed - no session returned');
                 vscode.window.showErrorMessage('GitHub authentication failed.');
                 return false;
             }
 
+            logger.info('GitHub authentication successful');
             this.config = {
                 owner: repoInfo.owner,
                 repo: repoInfo.repo,
                 token: session.accessToken
             };
 
+            logger.debug('Creating Octokit instance with authenticated session');
             this.octokit = new Octokit({
                 auth: session.accessToken
             });
