@@ -2,7 +2,7 @@
   "name": "scubed-development-process",
   "displayName": "S-cubed Development Process",
   "description": "Complete AI-powered development process with requirements management, GitHub workflows, template gallery, and Claude integration",
-  "version": "1.0.50",
+  "version": "1.0.51",
   "publisher": "scubed-solutions",
   "icon": "images/icon.png",
   "repository": {
