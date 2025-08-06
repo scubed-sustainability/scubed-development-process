@@ -5,7 +5,7 @@
       "name": "Requirements & Discovery Template",
       "description": "AI-powered requirements gathering and discovery with Claude integration and Microsoft Loop collaboration",
       "category": "requirements",
-      "version": "1.0.51",
+      "version": "1.1.0",
       "author": "S-cubed Solutions",
       "tags": [
         "requirements",
@@ -64,7 +64,7 @@
       "name": "API Development Template",
       "description": "REST API and microservices development with OpenAPI, testing frameworks, and cloud deployment",
       "category": "development",
-      "version": "1.0.51",
+      "version": "1.1.0",
       "author": "S-cubed Solutions",
       "tags": [
         "api",
@@ -98,7 +98,7 @@
       "name": "Data Pipeline Template",
       "description": "Data processing, ETL, and analytics with Apache Airflow, cloud deployment, and monitoring",
       "category": "data",
-      "version": "1.0.51",
+      "version": "1.1.0",
       "author": "S-cubed Solutions",
       "tags": [
         "data",
@@ -133,7 +133,7 @@
       "name": "Mobile App Template",
       "description": "React Native and hybrid mobile application development with CI/CD and app store deployment",
       "category": "mobile",
-      "version": "1.0.51",
+      "version": "1.1.0",
       "author": "S-cubed Solutions",
       "tags": [
         "mobile",
@@ -190,7 +190,7 @@
     }
   ],
   "metadata": {
-    "version": "1.0.51",
+    "version": "1.1.0",
     "lastUpdated": "2025-08-06",
     "totalTemplates": 4,
     "availableTemplates": 1,
