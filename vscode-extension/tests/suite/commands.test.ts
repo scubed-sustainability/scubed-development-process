@@ -31,8 +31,7 @@ suite('Commands Test Suite', () => {
             const scubedCommands = commands.filter(cmd => cmd.startsWith('scubed.'));
             
             const expectedCommands = [
-                'scubed.createProject',
-                'scubed.initializeProject', 
+ 
                 'scubed.generatePrompts',
                 'scubed.openTemplateGallery',
                 'scubed.checkForUpdates',
@@ -202,13 +201,11 @@ suite('Commands Test Suite', () => {
     suite('Command Execution Context', () => {
         test('Commands should handle workspace-dependent vs workspace-independent execution', async () => {
             const workspaceIndependentCommands = [
-                'scubed.createProject',
                 'scubed.openTemplateGallery',
                 'scubed.checkForUpdates'
             ];
 
             const workspaceDependentCommands = [
-                'scubed.initializeProject',
                 'scubed.generatePrompts',
                 'scubed.pushToGitHub',
                 'scubed.syncWithGitHub',

@@ -181,7 +181,7 @@ Even with automated validation, manual verification is important:
 - [ ] Clicking items in sections works as expected
 
 ### **New User Experience**
-- [ ] Fresh VS Code install can access `scubed.createProject`
+- [ ] Fresh VS Code install can access `scubed.openTemplateGallery`
 - [ ] Template gallery opens without workspace
 - [ ] Update check works without configuration
 - [ ] Welcome flow guides users to key features

@@ -225,7 +225,6 @@ suite('UX Validation Test Suite', () => {
             
             // Essential commands that should work without workspace/configuration
             const essentialCommands = [
-                'scubed.createProject',
                 'scubed.openTemplateGallery',
                 'scubed.checkForUpdates'
             ];

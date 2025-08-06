@@ -19,8 +19,6 @@ suite('Extension Test Suite', () => {
         const scubedCommands = commands.filter(cmd => cmd.startsWith('scubed.'));
         // Check for essential commands
         const expectedCommands = [
-            'scubed.createProject',
-            'scubed.initializeProject',
             'scubed.generatePrompts',
             'scubed.pushRequirements',
             'scubed.syncGitHub',

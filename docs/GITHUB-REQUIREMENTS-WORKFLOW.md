@@ -54,8 +54,8 @@ This document outlines the practical implementation of automated requirements ma
 
 Developer working on "User Authentication" feature:
 
-1. Opens VSCode → runs **"S-cubed: Create New Project from Template"**
-2. Uses requirements template to document:
+1. Opens VSCode → runs **"S-cubed: Generate Discovery Prompts"**
+2. Uses generated prompts to document:
    - Business objectives
    - Functional requirements  
    - Acceptance criteria

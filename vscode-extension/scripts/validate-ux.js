@@ -129,7 +129,6 @@ function validateUX() {
         log(colors.bold, '🚀 Validating Essential Commands...');
         
         const essentialCommands = [
-            'scubed.createProject',
             'scubed.openTemplateGallery', 
             'scubed.checkForUpdates'
         ];

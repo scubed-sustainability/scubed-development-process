@@ -34,8 +34,6 @@ suite('Extension Test Suite', () => {
         
         // Check for essential commands
         const expectedCommands = [
-            'scubed.createProject',
-            'scubed.initializeProject',
             'scubed.generatePrompts',
             'scubed.openTemplateGallery',
             'scubed.checkForUpdates',

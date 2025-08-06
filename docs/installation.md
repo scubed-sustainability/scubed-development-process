@@ -70,16 +70,17 @@ cd scubed-development-process
 ### **2. Test Commands**
 - Open Command Palette (`Cmd+Shift+P` / `Ctrl+Shift+P`)
 - Type "S-cubed" - you should see available commands:
-  - **S-cubed: Create New Project from Template**
-  - **S-cubed: Initialize Current Project**
+  - **S-cubed: Open Template Gallery**
   - **S-cubed: Generate Discovery Prompts**
-  - **S-cubed: Help**
+  - **S-cubed: Push Requirements to GitHub**
+  - **S-cubed: Check Approval Status**
+  - And other workflow commands
 
-### **3. Create Your First Project**
-1. Run: **"S-cubed: Create New Project from Template"**
-2. Choose a template
-3. Select project location
-4. Follow the setup prompts
+### **3. Explore Templates & Tools**
+1. Run: **"S-cubed: Open Template Gallery"**
+2. Browse available templates
+3. Use S-cubed commands for requirements management
+4. Follow the workflow setup guides
 
 ---
 
@@ -232,7 +233,7 @@ For debugging issues:
 After installation:
 
 1. **📚 Read the [Quick Start Guide](../README.md#quick-start)**
-2. **🎨 Create your first project** using "S-cubed: Create New Project from Template"
+2. **🎨 Explore templates** using "S-cubed: Open Template Gallery"
 3. **⚙️ Configure settings** for your workflow preferences
 4. **👥 Set up GitHub integration** for team collaboration
 5. **🤖 Explore AI integration** with Claude prompts

@@ -2,7 +2,6 @@ import * as vscode from 'vscode';
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import * as axios from 'axios';
-import * as yauzl from 'yauzl';
 import { GitHubService } from './github-service';
 import { ValidationService } from './validation-service';
 
@@ -10,15 +9,18 @@ let gitHubService: GitHubService;
 let validationService: ValidationService;
 
 export function activate(context: vscode.ExtensionContext) {
-    console.log('S-cubed Requirements Template extension is now active!');
+    console.log('🚀 S-cubed Extension ACTIVATION STARTING...');
+    
+    try {
+        // Initialize services
+        console.log('📦 Initializing services...');
+        gitHubService = new GitHubService();
+        console.log('✅ GitHubService created');
+        validationService = new ValidationService();
+        console.log('✅ ValidationService created');
 
-    // Initialize services
-    gitHubService = new GitHubService();
-    validationService = new ValidationService();
-
-    // Register commands
-    const createProjectCommand = vscode.commands.registerCommand('scubed.createProject', createProject);
-    const initializeProjectCommand = vscode.commands.registerCommand('scubed.initializeProject', initializeProject);
+        // Register commands
+        console.log('🔧 Registering commands...');
     const generatePromptsCommand = vscode.commands.registerCommand('scubed.generatePrompts', generatePrompts);
     const openTemplateGalleryCommand = vscode.commands.registerCommand('scubed.openTemplateGallery', openTemplateGallery);
     const checkForUpdatesCommand = vscode.commands.registerCommand('scubed.checkForUpdates', () => checkForUpdates(context));
@@ -35,16 +37,21 @@ export function activate(context: vscode.ExtensionContext) {
     const moveToInDevelopmentCommand = vscode.commands.registerCommand('scubed.moveToInDevelopment', moveToInDevelopment);
     const viewRequirementsDashboardCommand = vscode.commands.registerCommand('scubed.viewRequirementsDashboard', viewRequirementsDashboard);
 
-    // Register tree data providers for the activity bar views
-    const projectTemplatesProvider = new ProjectTemplatesProvider();
-    const quickActionsProvider = new QuickActionsProvider();
-    
-    const projectTemplatesProviderRegistration = vscode.window.registerTreeDataProvider('scubed.projectTemplates', projectTemplatesProvider);
-    const quickActionsProviderRegistration = vscode.window.registerTreeDataProvider('scubed.quickActions', quickActionsProvider);
+        // Register tree data providers for the activity bar views
+        console.log('🌳 Creating tree providers...');
+        const projectTemplatesProvider = new ProjectTemplatesProvider();
+        console.log('✅ ProjectTemplatesProvider created');
+        const quickActionsProvider = new QuickActionsProvider();
+        console.log('✅ QuickActionsProvider created');
+        
+        console.log('🔗 Registering tree providers...');
+        const projectTemplatesProviderRegistration = vscode.window.registerTreeDataProvider('scubed.projectTemplates', projectTemplatesProvider);
+        console.log('✅ scubed.projectTemplates provider registered');
+        const quickActionsProviderRegistration = vscode.window.registerTreeDataProvider('scubed.quickActions', quickActionsProvider);
+        console.log('✅ scubed.quickActions provider registered');
 
-    context.subscriptions.push(
-        createProjectCommand,
-        initializeProjectCommand,
+        console.log('📋 Adding subscriptions to context...');
+        context.subscriptions.push(
         generatePromptsCommand,
         openTemplateGalleryCommand,
         checkForUpdatesCommand,
@@ -67,241 +74,20 @@ export function activate(context: vscode.ExtensionContext) {
         setTimeout(() => checkForUpdates(context, true), 5000);
     }
 
-    // Show welcome message on first install
-    const hasShownWelcome = context.globalState.get('scubed.hasShownWelcome', false);
-    if (!hasShownWelcome) {
-        showWelcomeMessage(context);
-    }
-}
-
-async function createProject() {
-    try {
-        // Get project details from user
-        const projectName = await vscode.window.showInputBox({
-            prompt: 'Enter project name',
-            placeHolder: 'my-awesome-project',
-            validateInput: (value) => {
-                if (!value || value.trim() === '') {
-                    return 'Project name is required';
-                }
-                if (!/^[a-z0-9-_]+$/i.test(value)) {
-                    return 'Project name can only contain letters, numbers, hyphens, and underscores';
-                }
-                return null;
-            }
-        });
-
-        if (!projectName) {
-            return;
+        // Show welcome message on first install
+        const hasShownWelcome = context.globalState.get('scubed.hasShownWelcome', false);
+        if (!hasShownWelcome) {
+            showWelcomeMessage(context);
         }
-
-        // Get project location
-        const defaultPath = vscode.workspace.getConfiguration('scubed').get<string>('defaultProjectPath') || '';
-        const folders = await vscode.window.showOpenDialog({
-            canSelectFiles: false,
-            canSelectFolders: true,
-            canSelectMany: false,
-            openLabel: 'Select Project Location',
-            defaultUri: defaultPath ? vscode.Uri.file(defaultPath) : undefined
-        });
-
-        if (!folders || folders.length === 0) {
-            return;
-        }
-
-        const projectPath = path.join(folders[0].fsPath, projectName);
-
-        // Check if directory exists and is not empty
-        if (await fs.pathExists(projectPath)) {
-            const files = await fs.readdir(projectPath);
-            if (files.length > 0) {
-                const choice = await vscode.window.showWarningMessage(
-                    `Directory ${projectPath} is not empty. Continue?`,
-                    'Yes, Continue',
-                    'Cancel'
-                );
-                if (choice !== 'Yes, Continue') {
-                    return;
-                }
-            }
-        }
-
-        // Show progress
-        await vscode.window.withProgress({
-            location: vscode.ProgressLocation.Notification,
-            title: 'Creating S-cubed Project',
-            cancellable: false
-        }, async (progress) => {
-            progress.report({ increment: 0, message: 'Downloading template...' });
-            
-            // Download and extract template
-            await downloadAndExtractTemplate(projectPath, progress);
-            
-            progress.report({ increment: 70, message: 'Initializing project...' });
-            
-            // Update project configuration
-            await updateProjectConfig(projectPath, projectName);
-            
-            progress.report({ increment: 90, message: 'Opening project...' });
-            
-            // Open the new project
-            const uri = vscode.Uri.file(projectPath);
-            await vscode.commands.executeCommand('vscode.openFolder', uri, false);
-            
-            progress.report({ increment: 100, message: 'Complete!' });
-        });
-
-        // Show success message
-        const choice = await vscode.window.showInformationMessage(
-            `Project '${projectName}' created successfully! 🎉`,
-            'Initialize Project',
-            'Generate Prompts'
-        );
-
-        // Auto-run initialization if enabled
-        if (vscode.workspace.getConfiguration('scubed').get<boolean>('autoInitialize')) {
-            if (choice === 'Initialize Project') {
-                await initializeProject();
-            } else if (choice === 'Generate Prompts') {
-                await generatePrompts();
-            }
-        }
-
-    } catch (error) {
-        vscode.window.showErrorMessage(`Failed to create project: ${error}`);
-    }
-}
-
-async function downloadAndExtractTemplate(projectPath: string, progress: vscode.Progress<{ increment?: number; message?: string }>) {
-    const config = vscode.workspace.getConfiguration('scubed');
-    const templateSource = config.get<string>('templateSource') || 'https://github.com/scubed-sustainability/scubed-development-process/archive/refs/heads/main.zip';
-    
-    // Create project directory
-    await fs.ensureDir(projectPath);
-    
-    // Download template
-    const response = await axios.default.get(templateSource, { responseType: 'arraybuffer' });
-    const zipBuffer = Buffer.from(response.data);
-    
-    progress.report({ increment: 30, message: 'Extracting template...' });
-    
-    // Extract zip file
-    return new Promise<void>((resolve, reject) => {
-        yauzl.fromBuffer(zipBuffer, { lazyEntries: true }, (err: Error | null, zipfile?: yauzl.ZipFile) => {
-            if (err) {
-                reject(err);
-                return;
-            }
-            
-            if (!zipfile) {
-                reject(new Error('Failed to read zip file'));
-                return;
-            }
-
-            zipfile.readEntry();
-            zipfile.on('entry', (entry: yauzl.Entry) => {
-                // Skip directories and unwanted files
-                if (/\/$/.test(entry.fileName) || 
-                    entry.fileName.includes('.git/') ||
-                    entry.fileName.endsWith('install.ps1')) {
-                    zipfile.readEntry();
-                    return;
-                }
-
-                // Remove the root folder from path (e.g., requirements-template-main/)
-                const pathParts = entry.fileName.split('/');
-                pathParts.shift(); // Remove first part
-                const relativePath = pathParts.join('/');
-                
-                if (!relativePath) {
-                    zipfile.readEntry();
-                    return;
-                }
-
-                const outputPath = path.join(projectPath, relativePath);
-                
-                // Ensure directory exists
-                fs.ensureDirSync(path.dirname(outputPath));
-                
-                zipfile.openReadStream(entry, (err: Error | null, readStream?: NodeJS.ReadableStream) => {
-                    if (err) {
-                        reject(err);
-                        return;
-                    }
-                    
-                    if (!readStream) {
-                        zipfile.readEntry();
-                        return;
-                    }
-
-                    const writeStream = fs.createWriteStream(outputPath);
-                    readStream.pipe(writeStream);
-                    writeStream.on('close', () => {
-                        zipfile.readEntry();
-                    });
-                });
-            });
-
-            zipfile.on('end', () => {
-                resolve();
-            });
-
-            zipfile.on('error', (err: Error) => {
-                reject(err);
-            });
-        });
-    });
-}
-
-async function updateProjectConfig(projectPath: string, projectName: string) {
-    const projectJsonPath = path.join(projectPath, 'project.json');
-    
-    if (await fs.pathExists(projectJsonPath)) {
-        const projectJson = await fs.readJson(projectJsonPath);
-        projectJson.name = projectName;
-        projectJson.created = new Date().toISOString().split('T')[0];
-        projectJson.createdBy = 'S-cubed VS Code Extension';
         
-        await fs.writeJson(projectJsonPath, projectJson, { spaces: 2 });
-    }
-}
-
-async function initializeProject() {
-    if (!vscode.workspace.workspaceFolders) {
-        vscode.window.showErrorMessage('No workspace folder found. Please open a project first.');
-        return;
-    }
-
-    const workspaceRoot = vscode.workspace.workspaceFolders[0].uri.fsPath;
-    
-    try {
-        await vscode.window.withProgress({
-            location: vscode.ProgressLocation.Notification,
-            title: 'Initializing S-cubed Project',
-            cancellable: false
-        }, async (progress) => {
-            progress.report({ increment: 0, message: 'Running initialization script...' });
-            
-            // Run the Python initialization script
-            const initScriptPath = path.join(workspaceRoot, 'scripts', 'init_project.py');
-            
-            if (await fs.pathExists(initScriptPath)) {
-                const terminal = vscode.window.createTerminal('S-cubed Initialize');
-                terminal.sendText(`python "${initScriptPath}"`);
-                terminal.show();
-                
-                progress.report({ increment: 100, message: 'Initialization complete!' });
-            } else {
-                throw new Error('Initialization script not found. Make sure you created the project from the S-cubed template.');
-            }
-        });
-
-        vscode.window.showInformationMessage('Project initialized successfully! Check the terminal for details.');
+        console.log('🎉 S-cubed extension activation COMPLETED successfully!');
         
     } catch (error) {
-        vscode.window.showErrorMessage(`Failed to initialize project: ${error}`);
+        console.error('💥 EXTENSION ACTIVATION FAILED:', error);
+        vscode.window.showErrorMessage(`S-cubed extension failed to activate: ${error}`);
     }
 }
+
 
 async function generatePrompts() {
     if (!vscode.workspace.workspaceFolders) {
@@ -438,15 +224,11 @@ function getTemplateGalleryHtml(): string {
 async function showWelcomeMessage(context: vscode.ExtensionContext) {
     const choice = await vscode.window.showInformationMessage(
         'Welcome to S-cubed Requirements Template! 🎉',
-        'Create New Project',
         'View Documentation',
         "Don't Show Again"
     );
 
     switch (choice) {
-        case 'Create New Project':
-            await createProject();
-            break;
         case 'View Documentation':
             vscode.env.openExternal(vscode.Uri.parse('https://github.com/scubed-sustainability/scubed-development-process'));
             break;
@@ -466,18 +248,18 @@ class ProjectTemplatesProvider implements vscode.TreeDataProvider<TemplateItem> 
         if (!element) {
             return Promise.resolve([
                 new TemplateItem('Requirements Template', 'AI-powered requirements gathering', vscode.TreeItemCollapsibleState.None, {
-                    command: 'scubed.createProject',
-                    title: 'Create Project',
+                    command: 'scubed.openTemplateGallery',
+                    title: 'View Template',
                     arguments: ['requirements']
                 }),
                 new TemplateItem('API Development', 'REST API development template', vscode.TreeItemCollapsibleState.None, {
-                    command: 'scubed.createProject',
-                    title: 'Create Project',
+                    command: 'scubed.openTemplateGallery',
+                    title: 'View Template',
                     arguments: ['api']
                 }),
                 new TemplateItem('Data Pipeline', 'Data processing template', vscode.TreeItemCollapsibleState.None, {
-                    command: 'scubed.createProject',
-                    title: 'Create Project',
+                    command: 'scubed.openTemplateGallery',
+                    title: 'View Template',
                     arguments: ['data']
                 })
             ]);
@@ -494,14 +276,6 @@ class QuickActionsProvider implements vscode.TreeDataProvider<ActionItem> {
     getChildren(element?: ActionItem): Thenable<ActionItem[]> {
         if (!element) {
             return Promise.resolve([
-                new ActionItem('Create New Project', '$(add) Create from template', {
-                    command: 'scubed.createProject',
-                    title: 'Create New Project'
-                }),
-                new ActionItem('Initialize Project', '$(folder-opened) Setup current folder', {
-                    command: 'scubed.initializeProject',
-                    title: 'Initialize Project'
-                }),
                 new ActionItem('Generate Prompts', '$(comment-discussion) Create Claude prompts', {
                     command: 'scubed.generatePrompts',
                     title: 'Generate Prompts'

@@ -1,24 +1,16 @@
-# Development files
-.vscode/**
-.vscode-test/**
+# Source files - webpack bundles everything
 src/**
 tests/**
 node_modules/**
+*.ts
 *.map
-.gitignore
-.gitattributes
-tsconfig.json
+
+# Development files
+.vscode/**
+.vscode-test/**
 webpack.config.js
+tsconfig.json
 .eslintrc.json
-
-# Build artifacts
-out/tests/**
-out/test/**
-out/src/**/*.map
-
-# Development dependencies
-**/*.ts
-!out/**/*.js
 
 # Documentation
 README.md
@@ -39,8 +31,6 @@ package-lock.json
 # Configuration files for development
 .prettierrc
 .editorconfig
-webpack.config.js
-rollup.config.js
 
 # OS files
 .DS_Store
@@ -53,3 +43,6 @@ npm-debug.log*
 # Temporary files
 *.tmp
 *.temp
+
+# Keep only the bundled output
+!dist/**

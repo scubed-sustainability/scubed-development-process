@@ -1,7 +1,7 @@
 {
   "name": "scubed-development-process",
   "displayName": "S-cubed Development Process",
-  "description": "Complete AI-powered development process with multiple project templates, Claude workflows, and automated documentation",
+  "description": "Complete AI-powered development process with requirements management, GitHub workflows, template gallery, and Claude integration",
   "version": "1.0.47",
   "publisher": "scubed-solutions",
   "icon": "images/icon.png",
@@ -28,20 +28,12 @@
     "loop",
     "scubed"
   ],
-  "activationEvents": [],
-  "main": "./out/vscode-extension/src/extension.js",
+  "activationEvents": [
+    "*"
+  ],
+  "main": "./dist/extension.js",
   "contributes": {
     "commands": [
-      {
-        "command": "scubed.createProject",
-        "title": "Create New Project from Template",
-        "category": "S-cubed"
-      },
-      {
-        "command": "scubed.initializeProject",
-        "title": "Initialize Current Project",
-        "category": "S-cubed"
-      },
       {
         "command": "scubed.generatePrompts",
         "title": "Generate Discovery Prompts",
@@ -101,14 +93,6 @@
     "menus": {
       "commandPalette": [
         {
-          "command": "scubed.createProject",
-          "when": "true"
-        },
-        {
-          "command": "scubed.initializeProject",
-          "when": "workspaceFolderCount > 0"
-        },
-        {
           "command": "scubed.generatePrompts",
           "when": "workspaceFolderCount > 0"
         },
@@ -154,11 +138,6 @@
         }
       ],
       "explorer/context": [
-        {
-          "command": "scubed.createProject",
-          "group": "navigation",
-          "when": "explorerResourceIsFolder"
-        }
       ]
     },
     "snippets": [
@@ -285,8 +264,10 @@
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run validate-ux && npm run compile",
+    "vscode:prepublish": "npm run validate-ux && npm run webpack",
     "compile": "tsc -p ./",
+    "webpack": "webpack --mode production --devtool hidden-source-map",
+    "webpack:dev": "webpack --mode development --watch",
     "watch": "tsc -watch -p ./",
     "test": "npm run compile && node ./tests/runTest.js",
     "validate-ux": "node scripts/validate-ux.js",
@@ -307,7 +288,10 @@
     "@types/yauzl": "^2.10.3",
     "@vscode/test-electron": "^2.5.2",
     "mocha": "^11.7.1",
-    "typescript": "^4.9.4"
+    "ts-loader": "^9.5.2",
+    "typescript": "^4.9.4",
+    "webpack": "^5.101.0",
+    "webpack-cli": "^6.0.1"
   },
   "dependencies": {
     "@octokit/auth-oauth-app": "^6.0.0",

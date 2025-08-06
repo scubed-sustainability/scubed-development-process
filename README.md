@@ -9,10 +9,10 @@
 curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-development-process/main/scripts/install-extension.sh | bash
 ```
 
-**2. Create Project**
-- Open VS Code → `Ctrl+Shift+P` 
-- Run: **"S-cubed: Create New Project from Template"**
-- Choose template and start developing with AI workflows
+**2. Access Templates & Tools**
+- Open VS Code → `Ctrl+Shift+P`
+- Run: **"S-cubed: Open Template Gallery"** or other S-cubed commands
+- Use AI workflows and GitHub integration for development
 
 **3. Automated Development**
 ```bash
@@ -66,7 +66,7 @@ curl -sSL https://raw.githubusercontent.com/scubed-sustainability/scubed-develop
 ## 📊 Quick Stats
 
 - **85+ test cases** with 94% coverage + comprehensive UX validation  
-- **13 VS Code commands** for streamlined development (all Command Palette accessible)
+- **11 VS Code commands** for streamlined development (all Command Palette accessible)
 - **94 validation checks** across 8 categories in pre-release system
 - **40+ requirement patterns** analyzed for CLAUDE.md synchronization
 - **Multiple project templates** (API, Data Pipeline, Mobile, Web)
