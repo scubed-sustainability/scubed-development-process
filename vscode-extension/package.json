@@ -268,7 +268,7 @@
     "webpack": "webpack --mode production --devtool hidden-source-map",
     "webpack:dev": "webpack --mode development --watch",
     "watch": "tsc -watch -p ./",
-    "test": "npm run compile && node ./tests/runTest.js",
+    "test": "npm run compile && npm run webpack && node ./tests/runTest.js",
     "validate-ux": "node scripts/validate-ux.js",
     "pretest": "npm run validate-ux",
     "sync-version": "node scripts/sync-version.js",

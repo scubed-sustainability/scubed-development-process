@@ -19,12 +19,17 @@ suite('Extension Test Suite', () => {
         const scubedCommands = commands.filter(cmd => cmd.startsWith('scubed.'));
         // Check for essential commands
         const expectedCommands = [
-            'scubed.pushRequirements',
-            'scubed.syncGitHub',
-            'scubed.checkFeedback',
-            'scubed.openGallery',
-            'scubed.checkUpdates',
-            'scubed.help'
+            'scubed.openTemplateGallery',
+            'scubed.checkForUpdates', 
+            'scubed.showLogOutput',
+            'scubed.pushToGitHub',
+            'scubed.syncWithGitHub',
+            'scubed.checkGitHubFeedback',
+            'scubed.checkApprovalStatus',
+            'scubed.triggerApprovalCheck',
+            'scubed.requestReReview',
+            'scubed.moveToInDevelopment',
+            'scubed.viewRequirementsDashboard'
         ];
         expectedCommands.forEach(cmd => {
             assert.ok(scubedCommands.includes(cmd), `Command ${cmd} should be registered`);
