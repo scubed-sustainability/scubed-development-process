@@ -48,23 +48,18 @@ export class StakeholderService {
         logger.logFunctionEntry('StakeholderService.initialize');
         
         try {
-            // Initialize GitHub connection through existing service
-            const initialized = await this.gitHubService.initialize();
-            if (!initialized) {
-                logger.warn('GitHub service not initialized, stakeholder features unavailable');
-                return false;
-            }
-
-            // Get GitHub client from service (this assumes GitHubService exposes it)
+            // Get GitHub client from service 
             const config = this.gitHubService.getConfig();
-            if (config && config.token) {
+            if (config?.token) {
                 this.octokit = new Octokit({
                     auth: config.token
                 });
+                logger.info('StakeholderService initialized successfully with GitHub token');
+                return true;
+            } else {
+                logger.warn('GitHub service not configured, stakeholder features unavailable');
+                return false;
             }
-
-            logger.info('StakeholderService initialized successfully');
-            return true;
             
         } catch (error) {
             logger.error('Failed to initialize StakeholderService', error as Error);
@@ -316,7 +311,7 @@ export class StakeholderService {
     /**
      * Add reviewers to GitHub issue/PR
      */
-    private async addReviewers(owner: string, repo: string, issueNumber: number, reviewers: string[]): Promise<void> {
+    private async addReviewers(_owner: string, _repo: string, issueNumber: number, reviewers: string[]): Promise<void> {
         if (!this.octokit) return;
 
         try {
