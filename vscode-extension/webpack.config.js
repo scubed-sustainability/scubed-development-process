@@ -29,10 +29,21 @@ module.exports = (env, argv) => {
       rules: [
         {
           test: /\.ts$/,
-          exclude: /node_modules/,
+          exclude: [
+            /node_modules/,
+            /\.vscode-test/,
+            /dist/,
+            /out/,
+          ],
           use: [
             {
-              loader: 'ts-loader'
+              loader: 'ts-loader',
+              options: {
+                transpileOnly: !isProduction, // Faster dev builds
+                compilerOptions: {
+                  sourceMap: !isProduction
+                }
+              }
             }
           ]
         }
@@ -46,6 +57,7 @@ module.exports = (env, argv) => {
       sideEffects: false, // Enable aggressive tree shaking
       mangleExports: isProduction,
       concatenateModules: isProduction,
+      // No splitChunks for VS Code extensions - single bundle required
     },
     
     devtool: isProduction ? 'hidden-source-map' : 'nosources-source-map',
@@ -57,8 +69,8 @@ module.exports = (env, argv) => {
     // 🟢 GREEN: Performance optimizations
     performance: {
       hints: isProduction ? 'warning' : false,
-      maxEntrypointSize: 400 * 1024, // 400 KiB target
-      maxAssetSize: 400 * 1024
+      maxEntrypointSize: 500 * 1024, // 500 KiB - more realistic for VS Code extensions
+      maxAssetSize: 500 * 1024
     },
     
     // Copy template files to dist directory
