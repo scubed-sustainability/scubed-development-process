@@ -199,9 +199,9 @@ describe('🔴 Template Gallery User Journey (E2E TDD)', function() {
             const requirementsContent = await fs.readFile(requirementsPath, 'utf-8');
             
             expect(requirementsContent).to.include('# Project Requirements');
-            expect(requirementsContent).to.include('👥 Stakeholders');
-            expect(requirementsContent).to.include('📋 Functional Requirements');
-            expect(requirementsContent).to.include('✅ Approval');
+            expect(requirementsContent).to.include('## Stakeholders');
+            expect(requirementsContent).to.include('## Functional Requirements');
+            expect(requirementsContent).to.include('## Acceptance Criteria');
             
             console.log('   ✅ Template content is comprehensive');
             

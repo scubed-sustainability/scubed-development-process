@@ -1,57 +1,47 @@
 # Requirements Template
 
-This template provides a structured approach to gathering and documenting project requirements.
+This simplified template provides a streamlined framework for gathering essential project requirements using the S-cubed development process.
 
-## 📁 Files Included
+## Getting Started
 
-- **requirements.md** - Main requirements document template
-- **README.md** - This file explaining the template usage
-- **scripts/** - Utility scripts for project setup (optional)
+1. **Open the template** - Use the S-cubed VS Code extension to apply this template to your project
+2. **Fill in the placeholders** - Replace all `[placeholders]` with your actual project information
+3. **Complete all 6 sections** - Each section is required for project approval
+4. **Check off items** - Use the `- [ ]` checkboxes to track your progress
 
-## 🚀 Getting Started
+## Template Structure
 
-1. Fill out the `requirements.md` file with your project details
-2. Review each section and customize as needed
-3. Use the checklist format to track completion
-4. Share with stakeholders for approval
+This template contains exactly **6 required sections**:
 
-## 📋 Template Sections
+1. **Requirement Title** - Your project name/title
+2. **Requirement Summary** - Brief description of what you're building and why
+3. **Business Objectives** - Specific measurable business goals and success metrics
+4. **Functional Requirements** - Core features users will interact with
+5. **Acceptance Criteria** - Overall project success criteria and quality gates
+6. **Stakeholders** - All people who need to approve this project
 
-### Overview & Goals
-Define the project purpose and high-level objectives.
+## Using the Template
 
-### Stakeholders
-Identify key people involved in the project.
+1. **Start with the title and summary** - Define what you're building
+2. **Define business value** - Clear objectives and success metrics
+3. **List core features** - Focus on user-facing functionality
+4. **Set success criteria** - How you'll know the project succeeded
+5. **Identify approvers** - Who needs to sign off before development
+6. **Get stakeholder input** - Collaborate with your team to complete all sections
 
-### Functional Requirements
-Detail what the system should do - core features and functionality.
+## Benefits of Simplified Template
 
-### Technical Requirements
-Specify technology choices, performance criteria, and infrastructure needs.
+- **Quick to complete** - Can be finished in 10-15 minutes
+- **Focused content** - Only essential information required
+- **Easy to review** - Stakeholders can quickly understand and approve
+- **Clear structure** - No optional sections to confuse priorities
 
-### Security Requirements
-Outline security measures and compliance requirements.
+## S-cubed Development Process
 
-### User Experience Requirements
-Define usability and accessibility standards.
+This template is part of the S-cubed development process, which provides:
+- Automated GitHub workflows
+- Stakeholder approval tracking  
+- Requirements validation
+- Project documentation standards
 
-### Testing Requirements
-Establish testing strategy and coverage targets.
-
-### Timeline
-Break down the project into phases with deliverables.
-
-### Approval
-Track stakeholder sign-offs and requirement finalization.
-
-## 💡 Tips for Success
-
-- Be specific and measurable in your requirements
-- Use checklists to track progress
-- Include acceptance criteria for each feature
-- Review and update regularly
-- Get stakeholder buy-in before development begins
-
----
-
-*Part of the S-cubed Development Process Toolkit*
+For more information, visit the [S-cubed Development Process repository](https://github.com/scubed-sustainability/scubed-development-process).

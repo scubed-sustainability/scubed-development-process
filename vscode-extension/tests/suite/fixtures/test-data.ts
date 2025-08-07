@@ -9,40 +9,41 @@
 
 export const VALID_REQUIREMENTS_MD = `# Project Requirements
 
-## 📋 Overview
+## Requirement Title
+Sample Test Project
+
+## Requirement Summary
 This is a sample project for testing requirements validation.
 
-## 👥 Stakeholders
-- **Project Manager**: john-doe - john@example.com
-- **Developer**: jane-smith - jane@example.com
-- **Client**: client-user - client@example.com
+## Business Objectives
+- Validate the S-cubed extension functionality
+- Ensure proper template processing
+- Test stakeholder validation
 
-## 📋 Functional Requirements
+## Functional Requirements
 
 ### Core Features
 1. **User Authentication**
    - Description: Users can log in and log out
-   - Acceptance Criteria:
-     - [ ] User can create account
-     - [ ] User can log in with valid credentials
-     - [ ] User can log out
+   - [ ] User can create account
+   - [ ] User can log in with valid credentials
+   - [ ] User can log out
 
 2. **Data Management**
    - Description: Users can manage their data
-   - Acceptance Criteria:
-     - [ ] User can create new records
-     - [ ] User can edit existing records
-     - [ ] User can delete records
+   - [ ] User can create new records
+   - [ ] User can edit existing records
+   - [ ] User can delete records
 
-## 🔧 Technical Requirements
-- **Frontend**: React
-- **Backend**: Node.js
-- **Database**: PostgreSQL
+## Acceptance Criteria
+- [ ] All functional requirements are implemented
+- [ ] User testing is completed successfully
+- [ ] Performance requirements are met
 
-## ✅ Approval
-- [ ] john-doe approval
-- [ ] jane-smith approval
-- [ ] client-user approval
+## Stakeholders
+- **Project Manager**: john-doe - john@example.com
+- **Developer**: jane-smith - jane@example.com
+- **Client**: client-user - client@example.com
 `;
 
 export const INVALID_REQUIREMENTS_MD = `# Incomplete Requirements
@@ -55,13 +56,25 @@ Content without proper stakeholder format.
 
 export const REQUIREMENTS_WITH_INVALID_STAKEHOLDERS = `# Project Requirements
 
-## 👥 Stakeholders
+## Requirement Title
+Test Project with Invalid Stakeholders
+
+## Requirement Summary
+Testing stakeholder validation.
+
+## Business Objectives
+- Test validation system
+
+## Functional Requirements
+Basic requirements here.
+
+## Acceptance Criteria
+- [ ] Validation passes
+
+## Stakeholders
 - **Project Manager**: invalid@username - john@example.com
 - **Developer**: user_with_underscores - jane@example.com
 - **Client**: 123numbers - client@example.com
-
-## 📋 Functional Requirements
-Basic requirements here.
 `;
 
 // ============================================================================
@@ -313,14 +326,24 @@ export function createRequirementsWithStakeholders(stakeholders: string[]): stri
     
     return `# Project Requirements
 
-## 👥 Stakeholders
-${stakeholderLines}
+## Requirement Title
+Test Project
 
-## 📋 Functional Requirements
+## Requirement Summary
+Testing requirements with stakeholders.
+
+## Business Objectives
+- Test stakeholder validation
+
+## Functional Requirements
 - Basic requirement for testing
 
-## ✅ Approval
-${stakeholders.map(username => `- [ ] ${username} approval`).join('\n')}
+## Acceptance Criteria
+- [ ] All requirements validated
+- [ ] Stakeholder approval received
+
+## Stakeholders
+${stakeholderLines}
 `;
 }
 
