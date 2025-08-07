@@ -74,20 +74,17 @@ npm run test:extension    # Extension tests
 ```bash
 cd vscode-extension
 
-# Webpack bundling (RECOMMENDED - resolves all dependencies automatically)
-npm run webpack
+# 🛡️ PREVENTION WORKFLOW (MANDATORY for TypeScript changes)
+npm run compile          # ALWAYS run first - catches missing methods
+npm run webpack         # Bundle for production
+npm test               # Verify functionality
 
-# Development mode with watch
-npm run webpack:dev
+# Development modes
+npm run webpack:dev    # Development mode with watch
+npm run watch         # TypeScript watch mode
 
-# Compile TypeScript only (for development)
-npm run compile
-
-# Run tests
-npm test
-
-# Watch mode
-npm run watch
+# 🛡️ SETUP: Install prevention hooks (run once)
+cd .. && ./scripts/setup-git-hooks.sh
 ```
 
 ### **Release Process**
@@ -98,10 +95,42 @@ npm run watch
 
 ---
 
+## 🛡️ **PREVENTION FRAMEWORK**
+
+**🚨 CRITICAL: This framework prevents bugs like the StakeholderService.initialize() hanging issue**
+
+### **Layer 1: TypeScript Compilation**
+- **Stricter tsconfig.json** with `noImplicitReturns` and `noFallthroughCasesInSwitch`
+- **Mandatory compilation check** before any commit with TypeScript changes
+- **Command**: `cd vscode-extension && npm run compile`
+
+### **Layer 2: Pre-commit Hooks** 
+- **Automatic TypeScript validation** on every commit
+- **Setup once**: `./scripts/setup-git-hooks.sh`
+- **Catches**: Missing methods, compilation errors, type issues
+
+### **Layer 3: Integration Testing**
+- **Full extension activation test** in `tests/suite/integration/full-extension-activation.test.ts`
+- **Prevents hanging** during service initialization
+- **Verifies**: All services can initialize without undefined method calls
+
+### **Layer 4: Development Workflow**
+```bash
+# 🛡️ PREVENTION CHECKLIST (Follow for every TypeScript change):
+cd vscode-extension
+npm run compile        # ✅ Catch TypeScript errors
+npm run webpack       # ✅ Ensure bundling works  
+npm test             # ✅ Verify functionality
+git commit -m "..."  # ✅ Pre-commit hook validates automatically
+```
+
+---
+
 ## 🧪 **Testing Infrastructure**
 
 - **Root Tests** (`/tests/`) - Workflow and validation tests
 - **Extension Tests** (`/vscode-extension/tests/`) - Extension functionality tests
+- **Integration Tests** (`/vscode-extension/tests/suite/integration/`) - Full activation tests
 - **Coverage Target**: >95% code coverage
 
 ---
@@ -175,6 +204,8 @@ npm run watch
 - **Always use TodoWrite tool** for task tracking and planning
 - **Commit frequently**: Save work every 15-30 minutes to prevent loss
 - **Test before committing**: Run `npm run test:all` and ensure >95% coverage
+- **🛡️ MANDATORY: TypeScript validation** - Always run `npm run compile` before committing TypeScript changes
+- **🛡️ PREVENTION: Pre-commit hooks** - Install with `./scripts/setup-git-hooks.sh` to catch method call errors
 - **Code review frequently**: Identify redundancies and unused code regularly
 - **Follow existing patterns**: Check neighboring files for conventions
 - **Version sync**: Use `scripts/release.sh` for version management
