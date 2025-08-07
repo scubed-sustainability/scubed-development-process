@@ -86,7 +86,7 @@ S-cubed follows a modular architecture with clear separation of concerns:
 - **Purpose**: Project scaffolding and automation
 - **Languages**: Various (Python, Bash, PowerShell)
 - **Components**:
-  - `/templates/requirements-template/` - Complete project template for VSCode extension downloads
+  - `/templates/requirements-template/` - Simplified 6-section requirements template (74% size reduction)
   - `/scripts/` - Build, deployment, and release automation
   - `/scripts/pre-release-validation.sh` - Comprehensive quality validation
   - `/scripts/claude-md-requirements-tracker.js` - Documentation synchronization

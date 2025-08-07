@@ -423,15 +423,41 @@ async function checkForUpdates(context: vscode.ExtensionContext, silent: boolean
         await context.globalState.update('scubed.lastUpdateCheck', now);
         
         try {
-            // Check GitHub API for latest release
+            // Check GitHub API for latest release using authenticated requests to avoid rate limiting
             const apiUrl = 'https://api.github.com/repos/scubed-sustainability/scubed-development-process/releases/latest';
+            
+            let headers: Record<string, string> = { 
+                'User-Agent': 'S-cubed-Extension',
+                'Accept': 'application/vnd.github.v3+json'
+            };
+            
+            // Try to get GitHub authentication for higher rate limits
+            try {
+                const session = await vscode.authentication.getSession('github', ['repo'], { 
+                    createIfNone: false // Don't prompt user during update checks
+                });
+                if (session) {
+                    headers['Authorization'] = `token ${session.accessToken}`;
+                    logger.debug('Using authenticated GitHub request for update check');
+                }
+            } catch (authError) {
+                // Continue with unauthenticated request if authentication fails
+                logger.debug('GitHub authentication not available for update check, using unauthenticated request');
+            }
+            
             // 🟢 GREEN: Use built-in fetch instead of axios for lighter bundle
             const response = await fetch(apiUrl, {
-                headers: { 'User-Agent': 'S-cubed-Extension' },
+                headers,
                 // Note: fetch doesn't have built-in timeout, but this is acceptable for update checks
             });
             
             if (!response.ok) {
+                if (response.status === 403) {
+                    const rateLimitError = await response.json().catch(() => ({}));
+                    if (rateLimitError.message && rateLimitError.message.includes('rate limit')) {
+                        throw new Error('GitHub API rate limit exceeded. The extension will retry automatically later.');
+                    }
+                }
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
@@ -474,9 +500,17 @@ async function checkForUpdates(context: vscode.ExtensionContext, silent: boolean
             
         } catch (apiError) {
             // Fallback to manual instructions if API fails
+            logger.warn('Update check failed:', apiError);
             if (!silent) {
+                const errorMsg = (apiError as Error).message || 'Unknown error';
+                const isRateLimit = errorMsg.includes('rate limit');
+                
+                const message = isRateLimit 
+                    ? `Current S-cubed extension version: v${currentVersion}\n\n⚠️ Update check temporarily unavailable due to GitHub rate limits.\nTry again later or check manually.`
+                    : `Current S-cubed extension version: v${currentVersion}\n\n⚠️ Could not check for updates automatically.\nPlease check GitHub releases manually.`;
+                
                 const choice = await vscode.window.showWarningMessage(
-                    `Current S-cubed extension version: v${currentVersion}\n\n⚠️ Could not check for updates automatically.\nPlease check GitHub releases manually.`,
+                    message,
                     'Open GitHub Releases',
                     'Show Install Instructions'
                 );

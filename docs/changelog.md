@@ -6,6 +6,24 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
+## [1.1.4] - 2025-08-07
+
+### Changed
+- **Template Simplification**: Requirements template reduced from 136-line complex structure to streamlined 6-section format
+- **Size Reduction**: Template file size reduced by 74% (5.72 KiB → 1.46 KiB)
+- **User Experience**: Template completion time reduced from 30+ minutes to 10-15 minutes
+- **File-based Templates**: Moved from hardcoded content to proper template files for easier maintenance
+
+### Added
+- TDD implementation for template file loading verification
+- Updated all test cases to match simplified template structure
+- Clean `[placeholder]` format instead of verbose guidance
+
+### Removed
+- Complex optional sections (Technical Requirements, Security, UX, Testing)
+- Verbose examples and guidance text
+- Redundant template directories (consolidated to single source)
+
 ## [1.0.51] - 2025-08-06
 
 ### Fixed

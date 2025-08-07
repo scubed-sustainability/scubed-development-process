@@ -3,7 +3,7 @@
     {
       "id": "requirements-template",
       "name": "Requirements & Discovery Template",
-      "description": "AI-powered requirements gathering and discovery with Claude integration and Microsoft Loop collaboration",
+      "description": "Simplified 6-section requirements template with AI-powered workflows and GitHub integration",
       "category": "requirements",
       "version": "1.1.4",
       "author": "S-cubed Solutions",
@@ -17,16 +17,16 @@
       "icon": "📋",
       "featured": true,
       "difficulty": "beginner",
-      "estimatedTime": "15 minutes",
+      "estimatedTime": "10-15 minutes",
       "sourceUrl": "https://github.com/scubed-sustainability/scubed-development-process/templates/requirements-template",
       "downloadUrl": "https://github.com/scubed-sustainability/scubed-development-process/archive/refs/heads/main.zip",
       "features": [
-        "Structured Claude discovery prompts",
-        "Microsoft Loop integration",
-        "Automated documentation workflows",
-        "Stakeholder collaboration tools",
-        "Rich snippet library",
-        "Project initialization scripts"
+        "Simplified 6-section structure",
+        "Quick completion in 10-15 minutes",
+        "Essential requirements only",
+        "GitHub workflow integration",
+        "Stakeholder approval tracking",
+        "Clean placeholder format"
       ],
       "prerequisites": [
         "VS Code 1.74.0+",
