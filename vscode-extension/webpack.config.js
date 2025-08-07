@@ -1,4 +1,5 @@
 const path = require('path');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 module.exports = (env, argv) => {
   const isProduction = argv.mode === 'production';
@@ -58,6 +59,19 @@ module.exports = (env, argv) => {
       hints: isProduction ? 'warning' : false,
       maxEntrypointSize: 400 * 1024, // 400 KiB target
       maxAssetSize: 400 * 1024
-    }
+    },
+    
+    // Copy template files to dist directory
+    plugins: [
+      new CopyWebpackPlugin({
+        patterns: [
+          {
+            from: path.resolve(__dirname, 'templates'),
+            to: path.resolve(__dirname, 'dist', 'templates'),
+            noErrorOnMissing: false
+          }
+        ]
+      })
+    ]
   };
 };

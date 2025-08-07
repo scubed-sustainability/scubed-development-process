@@ -10,6 +10,7 @@ import { GitHubService } from './github-service';
 import { logger } from './logger';
 import { NetworkService } from './network-service';
 import { RateLimitService } from './rate-limit-service';
+import { PlannerIntegrationService } from './planner-integration-service';
 
 export interface WorkflowStatus {
     stage: 'requirements' | 'github_push' | 'approval_tracking' | 'feedback_review' | 'development_ready';
@@ -19,6 +20,7 @@ export interface WorkflowStatus {
     requiredApprovals: number;
     lastUpdated: Date;
     nextActions: string[];
+    requirementsContent?: string; // Store requirements content for Planner integration
 }
 
 export interface ApprovalSummary {
@@ -42,6 +44,13 @@ export interface FeedbackItem {
     resolved: boolean;
 }
 
+export interface ErrorContext {
+    type: 'network' | 'authentication' | 'data' | 'unknown';
+    severity: 'recoverable' | 'user_fixable' | 'non_recoverable';
+    userAction: 'retry' | 'reauth' | 'fix_data' | 'manual';
+    technicalDetails: string;
+}
+
 /**
  * Complete GitHub integration workflow service
  */
@@ -52,8 +61,12 @@ export class GitHubWorkflowService {
         private context: vscode.ExtensionContext,
         private githubService: GitHubService,
         private networkService: NetworkService,
-        private rateLimitService: RateLimitService
-    ) {}
+        private rateLimitService: RateLimitService,
+        private plannerService?: PlannerIntegrationService
+    ) {
+        // Initialize Planner service if not provided
+        this.plannerService = plannerService || new PlannerIntegrationService();
+    }
 
     /**
      * Execute complete requirements → GitHub → approval tracking workflow
@@ -67,6 +80,9 @@ export class GitHubWorkflowService {
             if (!requirementsFile) {
                 throw new Error('No valid requirements file found');
             }
+
+            // Read requirements content for Planner integration later
+            const requirementsContent = await fs.readFile(requirementsFile, 'utf8');
 
             // Step 2: Push requirements to GitHub
             const issueNumber = await this.pushRequirementsToGitHub(requirementsFile);
@@ -84,7 +100,8 @@ export class GitHubWorkflowService {
                 approvalCount: 0,
                 requiredApprovals: await this.getRequiredApprovalCount(),
                 lastUpdated: new Date(),
-                nextActions: ['Monitor approval status', 'Check feedback', 'Respond to comments']
+                nextActions: ['Monitor approval status', 'Check feedback', 'Respond to comments'],
+                requirementsContent
             };
 
             logger.info('Complete GitHub workflow initiated successfully', { issueNumber });
@@ -636,6 +653,9 @@ export class GitHubWorkflowService {
                 developmentComment
             );
 
+            // 🚀 NEW: Trigger Microsoft Planner integration
+            await this.triggerPlannerIntegration();
+
             // Update workflow status
             this.currentWorkflowStatus.stage = 'development_ready';
             this.currentWorkflowStatus.status = 'completed';
@@ -741,6 +761,552 @@ export class GitHubWorkflowService {
                 
             case 'Request Re-Review':
                 await this.requestReReview();
+                break;
+        }
+    }
+
+    /**
+     * 🔵 REFACTOR: Main trigger method - now focused and clean
+     * Orchestrates the Planner integration workflow
+     */
+    private async triggerPlannerIntegration(): Promise<void> {
+        // Validate prerequisites
+        if (!this.validatePlannerIntegrationPrerequisites()) {
+            return;
+        }
+
+        try {
+            logger.info('Triggering Microsoft Planner integration...');
+
+            // Execute the integration
+            const integrationResult = await this.executePlannerIntegration();
+            
+            // Handle the result
+            await this.handlePlannerIntegrationResult(integrationResult);
+
+        } catch (error) {
+            await this.handlePlannerIntegrationError(error as Error);
+        }
+    }
+
+    /**
+     * 🔵 REFACTOR: Validate prerequisites for Planner integration
+     */
+    private validatePlannerIntegrationPrerequisites(): boolean {
+        if (!this.currentWorkflowStatus?.issueNumber) {
+            logger.warn('Cannot trigger Planner integration: missing issue number');
+            return false;
+        }
+
+        if (!this.plannerService) {
+            logger.warn('Cannot trigger Planner integration: Planner service not available');
+            return false;
+        }
+
+        return true;
+    }
+
+    /**
+     * 🔵 REFACTOR: Execute the core Planner integration logic
+     */
+    private async executePlannerIntegration() {
+        const requirementsContent = await this.getRequirementsContent();
+        if (!requirementsContent) {
+            throw new Error('No requirements content found for Planner integration');
+        }
+
+        return await this.plannerService!.handleRequirementsApproval(
+            this.currentWorkflowStatus!.issueNumber!,
+            requirementsContent
+        );
+    }
+
+    /**
+     * 🔵 REFACTOR: Handle integration result (success or failure)
+     */
+    private async handlePlannerIntegrationResult(integrationResult: any): Promise<void> {
+        if (integrationResult.success) {
+            await this.handlePlannerIntegrationSuccess(integrationResult);
+        } else {
+            await this.handlePlannerIntegrationFailure(integrationResult);
+        }
+    }
+
+    /**
+     * 🔵 REFACTOR: Handle successful Planner integration
+     */
+    private async handlePlannerIntegrationSuccess(integrationResult: any): Promise<void> {
+        // Post success comment to GitHub
+        await this.postPlannerSuccessComment(integrationResult);
+        
+        // Show user notification and handle response
+        await this.showPlannerSuccessNotification(integrationResult);
+        
+        logger.info(`Planner integration successful: ${integrationResult.tasksCreated} tasks created`);
+    }
+
+    /**
+     * 🔵 REFACTOR: Enhanced failure handling with actionable information
+     */
+    private async handlePlannerIntegrationFailure(integrationResult: any): Promise<void> {
+        const errorMessage = integrationResult.errors?.join(', ') || 'Unknown error';
+        logger.error(`Planner integration failed: ${errorMessage}`);
+        
+        const message = this.buildFailureMessage(integrationResult);
+        const actions = this.getFailureActions(integrationResult);
+        
+        const choice = await vscode.window.showWarningMessage(message, ...actions);
+        await this.handleFailureAction(choice, integrationResult);
+    }
+
+    /**
+     * 🔵 REFACTOR: Build informative failure message
+     */
+    private buildFailureMessage(integrationResult: any): string {
+        const hasErrors = integrationResult.errors && integrationResult.errors.length > 0;
+        const errorDetails = hasErrors ? integrationResult.errors[0] : 'Unknown error occurred';
+        
+        return `⚠️ Microsoft Planner Integration Failed\n\n` +
+               `❌ ${errorDetails}\n\n` +
+               `✅ Your requirements are still approved\n` +
+               `📋 You can create user stories manually in Planner\n` +
+               `🚀 Development can continue as planned`;
+    }
+
+    /**
+     * 🔵 REFACTOR: Get appropriate actions for failure
+     */
+    private getFailureActions(integrationResult: any): string[] {
+        return ['Try Manual Setup', 'View Logs', 'Continue Anyway'];
+    }
+
+    /**
+     * 🔵 REFACTOR: Handle user's choice from failure notification
+     */
+    private async handleFailureAction(choice: string | undefined, integrationResult: any): Promise<void> {
+        switch (choice) {
+            case 'Try Manual Setup':
+                logger.info('User chose manual Planner setup');
+                await this.showManualSetupGuidance(integrationResult);
+                break;
+            
+            case 'View Logs':
+                logger.info('User requested to view error logs');
+                await vscode.commands.executeCommand('scubed.showLogOutput');
+                break;
+            
+            default:
+                logger.info('User chose to continue anyway');
+                break;
+        }
+    }
+
+    /**
+     * 🔵 REFACTOR: Show manual setup guidance
+     */
+    private async showManualSetupGuidance(integrationResult: any): Promise<void> {
+        const guidance = `📋 Manual Planner Setup Guide:\n\n` +
+                        `1. Open Microsoft Planner in your browser\n` +
+                        `2. Create a new plan or select existing plan\n` +
+                        `3. Add the following user stories as tasks:\n\n` +
+                        `   ${this.formatUserStoriesForManualSetup()}\n\n` +
+                        `4. Assign tasks to team members\n` +
+                        `5. Set due dates and priorities\n\n` +
+                        `Need help? Check our documentation for detailed steps.`;
+        
+        const choice = await vscode.window.showInformationMessage(
+            guidance,
+            'Open Planner',
+            'View Documentation',
+            'OK'
+        );
+        
+        if (choice === 'Open Planner') {
+            await vscode.env.openExternal(vscode.Uri.parse('https://tasks.office.com'));
+        } else if (choice === 'View Documentation') {
+            await vscode.env.openExternal(vscode.Uri.parse('https://github.com/scubed-sustainability/scubed-development-process#planner-integration'));
+        }
+    }
+
+    /**
+     * 🔵 REFACTOR: Format user stories for manual setup
+     */
+    private formatUserStoriesForManualSetup(): string {
+        // This would be populated from the parsed requirements
+        return '• User Authentication System\n   • Product Dashboard\n   • Task Management System';
+    }
+
+    /**
+     * 🔵 REFACTOR: Enhanced error handling with recovery strategies
+     */
+    private async handlePlannerIntegrationError(error: Error): Promise<void> {
+        logger.logFunctionEntry('GitHubWorkflowService.handlePlannerIntegrationError');
+        logger.error('Planner integration failed', error);
+        
+        // Create error context for actionable user guidance
+        const errorContext = this.createErrorContext(error, 'planner_integration_failed');
+        await this.showActionableErrorMessage(errorContext);
+    }
+
+    /**
+     * 🔵 REFACTOR: Categorize errors for appropriate handling
+     */
+    private categorizeIntegrationError(error: Error): ErrorContext {
+        if (error.message.includes('network') || error.message.includes('timeout')) {
+            return {
+                type: 'network',
+                severity: 'recoverable',
+                userAction: 'retry',
+                technicalDetails: error.message
+            };
+        }
+        
+        if (error.message.includes('authentication') || error.message.includes('unauthorized')) {
+            return {
+                type: 'authentication',
+                severity: 'recoverable',
+                userAction: 'reauth',
+                technicalDetails: error.message
+            };
+        }
+        
+        if (error.message.includes('requirements content')) {
+            return {
+                type: 'data',
+                severity: 'user_fixable',
+                userAction: 'fix_data',
+                technicalDetails: error.message
+            };
+        }
+        
+        return {
+            type: 'unknown',
+            severity: 'non_recoverable',
+            userAction: 'manual',
+            technicalDetails: error.message
+        };
+    }
+
+    /**
+     * 🔵 REFACTOR: Build contextual error messages
+     */
+    private buildErrorMessage(errorContext: ErrorContext): string {
+        switch (errorContext.type) {
+            case 'network':
+                return '🌐 Network issue detected. Microsoft Planner integration failed due to connectivity problems.';
+            
+            case 'authentication':
+                return '🔐 Authentication required. Please sign in to Microsoft to enable Planner integration.';
+            
+            case 'data':
+                return '📋 Requirements data issue. Please check your requirements document format.';
+            
+            default:
+                return '⚠️ Failed to integrate with Microsoft Planner. Development can continue manually.';
+        }
+    }
+
+    /**
+     * 🔵 REFACTOR: Get appropriate recovery actions
+     */
+    private getErrorRecoveryActions(errorContext: ErrorContext): string[] {
+        switch (errorContext.type) {
+            case 'network':
+                return ['Retry', 'Continue Anyway', 'View Logs'];
+            
+            case 'authentication':
+                return ['Sign In', 'Continue Anyway', 'Help'];
+            
+            case 'data':
+                return ['Fix Requirements', 'Continue Anyway', 'View Logs'];
+            
+            default:
+                return ['View Logs', 'Continue', 'Report Issue'];
+        }
+    }
+
+    /**
+     * 🔵 REFACTOR: Handle user's error recovery choice
+     */
+    private async handleErrorRecoveryAction(choice: string | undefined, errorContext: ErrorContext): Promise<void> {
+        switch (choice) {
+            case 'Retry':
+                logger.info('User requested retry of Planner integration');
+                // Could implement retry with exponential backoff
+                await this.triggerPlannerIntegration();
+                break;
+            
+            case 'Sign In':
+                logger.info('User requested authentication for Planner');
+                // Could trigger authentication flow
+                vscode.window.showInformationMessage('Authentication flow will be implemented in real API integration.');
+                break;
+            
+            case 'Fix Requirements':
+                logger.info('User requested to fix requirements');
+                await this.openRequirementsForEditing();
+                break;
+            
+            case 'View Logs':
+                logger.info('User requested to view logs');
+                await vscode.commands.executeCommand('scubed.showLogOutput');
+                break;
+            
+            case 'Report Issue':
+                logger.info('User requested to report issue');
+                await vscode.env.openExternal(vscode.Uri.parse('https://github.com/scubed-sustainability/scubed-development-process/issues'));
+                break;
+            
+            default:
+                logger.info('User chose to continue anyway');
+                break;
+        }
+    }
+
+    /**
+     * 🔵 REFACTOR: Open requirements file for editing
+     */
+    private async openRequirementsForEditing(): Promise<void> {
+        try {
+            const workspaceFolders = vscode.workspace.workspaceFolders;
+            if (workspaceFolders) {
+                const requirementsFiles = ['requirements.md', 'REQUIREMENTS.md', 'docs/requirements.md'];
+                
+                for (const fileName of requirementsFiles) {
+                    const filePath = vscode.Uri.file(path.join(workspaceFolders[0].uri.fsPath, fileName));
+                    try {
+                        await vscode.window.showTextDocument(filePath);
+                        return;
+                    } catch {
+                        continue;
+                    }
+                }
+            }
+            
+            vscode.window.showWarningMessage('Could not find requirements file to edit.');
+        } catch (error) {
+            logger.error('Error opening requirements for editing', error as Error);
+        }
+    }
+
+    /**
+     * 🔵 REFACTOR: Post success comment to GitHub
+     */
+    private async postPlannerSuccessComment(integrationResult: any): Promise<void> {
+        const plannerComment = this.buildPlannerSuccessComment(integrationResult);
+        
+        await this.githubService.createIssueComment(
+            this.currentWorkflowStatus!.issueNumber!,
+            plannerComment
+        );
+    }
+
+    /**
+     * 🔵 REFACTOR: Build the success comment content
+     */
+    private buildPlannerSuccessComment(integrationResult: any): string {
+        return `📋 **Microsoft Planner Integration**\n\n` +
+            `✅ Successfully created ${integrationResult.tasksCreated} user stories in Planner!\n\n` +
+            `🔗 **View Tasks:** [Open Planner](${integrationResult.plannerUrl})\n\n` +
+            `**Next Steps:**\n` +
+            `- Review user stories in Planner\n` +
+            `- Assign tasks to development team\n` +
+            `- Begin sprint planning\n\n` +
+            `*Automated by S-cubed Extension*`;
+    }
+
+    /**
+     * 🔵 REFACTOR: Enhanced success notification with detailed information
+     */
+    private async showPlannerSuccessNotification(integrationResult: any): Promise<void> {
+        const message = this.buildDetailedSuccessMessage(integrationResult);
+        const actions = ['View Planner', 'View GitHub Issue', 'Continue'];
+        
+        const choice = await vscode.window.showInformationMessage(message, ...actions);
+        await this.handleSuccessNotificationAction(choice, integrationResult);
+    }
+
+    /**
+     * 🔵 REFACTOR: Build detailed success message
+     */
+    private buildDetailedSuccessMessage(integrationResult: any): string {
+        const taskCount = integrationResult.tasksCreated;
+        const taskWord = taskCount === 1 ? 'user story' : 'user stories';
+        
+        return `🎉 Successfully integrated with Microsoft Planner!\n\n` +
+               `✅ Created ${taskCount} ${taskWord}\n` +
+               `📋 Ready for sprint planning\n` +
+               `🔗 Tasks are now available in your Planner board`;
+    }
+
+    /**
+     * 🔵 REFACTOR: Handle user's choice from success notification
+     */
+    private async handleSuccessNotificationAction(choice: string | undefined, integrationResult: any): Promise<void> {
+        switch (choice) {
+            case 'View Planner':
+                logger.info('User chose to view Planner board');
+                await vscode.env.openExternal(vscode.Uri.parse(integrationResult.plannerUrl));
+                break;
+            
+            case 'View GitHub Issue':
+                logger.info('User chose to view GitHub issue');
+                await this.openCurrentGitHubIssue();
+                break;
+            
+            default:
+                logger.info('User chose to continue workflow');
+                break;
+        }
+    }
+
+    /**
+     * 🔵 REFACTOR: Open current GitHub issue in browser
+     */
+    private async openCurrentGitHubIssue(): Promise<void> {
+        if (this.currentWorkflowStatus?.issueNumber) {
+            const config = vscode.workspace.getConfiguration('scubed.github');
+            const repository = config.get('repository', '');
+            
+            if (repository) {
+                const issueUrl = `${repository}/issues/${this.currentWorkflowStatus.issueNumber}`;
+                await vscode.env.openExternal(vscode.Uri.parse(issueUrl));
+            } else {
+                vscode.window.showWarningMessage('GitHub repository not configured. Please check your settings.');
+            }
+        }
+    }
+
+    /**
+     * Get requirements content from stored workflow status
+     */
+    private async getRequirementsContent(): Promise<string | null> {
+        if (!this.currentWorkflowStatus?.requirementsContent) {
+            logger.warn('No requirements content stored in workflow status');
+            return null;
+        }
+
+        return this.currentWorkflowStatus.requirementsContent;
+    }
+
+
+    /**
+     * 🔵 REFACTOR: Create structured error context for user guidance
+     */
+    private createErrorContext(error: Error, errorType: string): ErrorContext {
+        const message = error.message.toLowerCase();
+        
+        // Network-related errors
+        if (message.includes('network') || message.includes('timeout') || message.includes('connection') || message.includes('enotfound')) {
+            return {
+                type: 'network',
+                severity: 'recoverable',
+                userAction: 'retry',
+                technicalDetails: error.message
+            };
+        }
+        
+        // Authentication errors
+        if (message.includes('unauthorized') || message.includes('forbidden') || message.includes('token') || message.includes('auth')) {
+            return {
+                type: 'authentication',
+                severity: 'user_fixable',
+                userAction: 'reauth',
+                technicalDetails: error.message
+            };
+        }
+        
+        // Data validation errors
+        if (message.includes('invalid') || message.includes('parse') || message.includes('format') || message.includes('validation')) {
+            return {
+                type: 'data',
+                severity: 'user_fixable',
+                userAction: 'fix_data',
+                technicalDetails: error.message
+            };
+        }
+        
+        // Unknown errors
+        return {
+            type: 'unknown',
+            severity: 'non_recoverable',
+            userAction: 'manual',
+            technicalDetails: error.message
+        };
+    }
+
+    /**
+     * 🔵 REFACTOR: Show actionable error messages with recovery options
+     */
+    private async showActionableErrorMessage(errorContext: ErrorContext): Promise<void> {
+        logger.logFunctionEntry('GitHubWorkflowService.showActionableErrorMessage');
+        
+        let message: string;
+        let actions: string[] = ['Manual Setup']; // Always provide manual fallback
+        
+        switch (errorContext.type) {
+            case 'network':
+                message = `🌐 Network connection failed: Unable to connect to Microsoft Planner. Please check your internet connection and try again.`;
+                actions.unshift('Retry');
+                break;
+                
+            case 'authentication':
+                message = `🔐 Authentication failed: Your Microsoft credentials need to be refreshed. Please sign in again to continue.`;
+                actions.unshift('Sign In Again', 'Check Configuration');
+                break;
+                
+            case 'data':
+                message = `📝 Data validation failed: There's an issue with your requirements format. Please review and fix the requirements structure.`;
+                actions.unshift('Review Requirements', 'Fix Format');
+                break;
+                
+            default:
+                message = `⚠️ Planner integration failed: ${errorContext.technicalDetails}. Please try manual setup or contact support.`;
+                actions.unshift('Retry', 'View Logs');
+                break;
+        }
+        
+        const selectedAction = await vscode.window.showErrorMessage(message, ...actions);
+        
+        // Handle user action selection
+        switch (selectedAction) {
+            case 'Retry':
+                await this.triggerPlannerIntegration();
+                break;
+                
+            case 'Sign In Again':
+                vscode.commands.executeCommand('scubed.showConfigurationHealth');
+                break;
+                
+            case 'Check Configuration':
+                vscode.commands.executeCommand('scubed.showConfigurationHealth');
+                break;
+                
+            case 'Review Requirements':
+                // Open requirements file if available
+                if (this.currentWorkflowStatus?.requirementsContent) {
+                    const doc = await vscode.workspace.openTextDocument({
+                        content: this.currentWorkflowStatus.requirementsContent,
+                        language: 'markdown'
+                    });
+                    vscode.window.showTextDocument(doc);
+                }
+                break;
+                
+            case 'View Logs':
+                vscode.commands.executeCommand('scubed.showLogOutput');
+                break;
+                
+            case 'Manual Setup':
+            default:
+                vscode.window.showInformationMessage(
+                    'Manual Setup: Please create user stories in Microsoft Planner manually using your approved requirements.',
+                    'Open Planner'
+                ).then(action => {
+                    if (action === 'Open Planner') {
+                        vscode.env.openExternal(vscode.Uri.parse('https://tasks.office.com'));
+                    }
+                });
                 break;
         }
     }

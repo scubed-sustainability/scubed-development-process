@@ -45,14 +45,12 @@ export async function getAxios(): Promise<any> {
     }
     
     try {
-        logger.debug('Lazy loading axios...');
-        const axios = await import('axios');
-        moduleCache.set(cacheKey, axios.default);
-        logger.debug('axios loaded successfully');
-        return axios.default;
+        // Note: axios was replaced with fetch API for performance
+        logger.warn('Axios lazy loading requested but axios was removed in favor of fetch API');
+        throw new Error('Axios is no longer available. Use native fetch API instead.');
     } catch (error: any) {
-        logger.error('Failed to lazy load axios', error);
-        throw new Error(`Failed to load HTTP client: ${error.message}`);
+        logger.error('Failed to lazy load axios (removed dependency)', error);
+        throw new Error('axios was removed for performance. Use native fetch API instead.');
     }
 }
 

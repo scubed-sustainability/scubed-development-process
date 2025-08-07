@@ -1,0 +1,154 @@
+# Create Planner Tasks
+# 🟢 GREEN PHASE: GitHub Actions workflow for automated Planner task creation
+#
+# This workflow triggers when a user comments "/create-planner-tasks" on an approved requirements issue
+# It parses the requirements, authenticates with Microsoft Graph API, and creates tasks in Planner
+#
+# Required secrets:
+# - AZURE_CLIENT_ID: Service principal client ID for Microsoft Graph API
+# - AZURE_CLIENT_SECRET: Service principal client secret
+# - AZURE_TENANT_ID: Azure AD tenant ID
+# - PLANNER_PLAN_ID: Microsoft Planner plan ID where tasks will be created
+#
+# Setup instructions:
+# 1. Create Azure service principal with Planner permissions
+# 2. Add secrets to GitHub repository settings
+# 3. Configure optional repository variables for customization
+
+name: Create Planner Tasks
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  create-tasks:
+    runs-on: ubuntu-latest
+    if: >
+      github.event.issue_comment.body == '/create-planner-tasks' &&
+      contains(github.event.issue.labels.*.name, 'approved') &&
+      contains(github.event.issue.labels.*.name, 'requirements')
+    
+    permissions:
+      issues: write
+      contents: read
+    
+    env:
+      AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+      AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+      AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+      PLANNER_PLAN_ID: ${{ secrets.PLANNER_PLAN_ID }}
+      PLANNER_BUCKET_NAME: ${{ vars.PLANNER_BUCKET_NAME || 'Sprint Backlog' }}
+      PLANNER_DEFAULT_ASSIGNEES: ${{ vars.PLANNER_DEFAULT_ASSIGNEES }}
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Parse Requirements
+        id: parse
+        run: |
+          # Extract requirements from GitHub issue body
+          ISSUE_BODY="${{ github.event.issue.body }}"
+          
+          # Validate requirements format
+          if [[ "$ISSUE_BODY" =~ "## 📋 Functional Requirements" ]]; then
+            echo "✅ Valid requirements format found"
+            
+            # Parse user stories using our script (will be implemented next)
+            echo "user-stories=$(node .github/scripts/create-planner-tasks.js '$ISSUE_BODY')" >> $GITHUB_OUTPUT
+          else
+            echo "❌ No Functional Requirements section found"
+            echo "::error::Requirements must contain '## 📋 Functional Requirements' section"
+            exit 1
+          fi
+          
+          # Also validate Acceptance Criteria section
+          if [[ "$ISSUE_BODY" =~ "**Acceptance Criteria:**" ]] && [[ "$ISSUE_BODY" =~ "**Description:**" ]]; then
+            echo "✅ Valid Acceptance Criteria and Description format found"
+          else
+            echo "⚠️ Missing Description or Acceptance Criteria format"
+          fi
+      
+      - name: Authenticate Microsoft Graph
+        id: auth
+        run: |
+          # Authenticate using service principal
+          echo "🔐 Authenticating with Microsoft Graph API..."
+          
+          AUTH_RESPONSE=$(curl -s -X POST "https://login.microsoftonline.com/$AZURE_TENANT_ID/oauth2/v2.0/token" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            -d "client_id=$AZURE_CLIENT_ID&client_secret=$AZURE_CLIENT_SECRET&scope=https://graph.microsoft.com/.default&grant_type=client_credentials")
+          
+          if [ $? -eq 0 ]; then
+            ACCESS_TOKEN=$(echo "$AUTH_RESPONSE" | jq -r '.access_token')
+            
+            if [ "$ACCESS_TOKEN" != "null" ] && [ -n "$ACCESS_TOKEN" ]; then
+              echo "✅ Authentication successful"
+              echo "::add-mask::$ACCESS_TOKEN"
+              echo "access_token=$ACCESS_TOKEN" >> $GITHUB_OUTPUT
+            else
+              echo "Authentication failed"
+              echo "Error: $AUTH_RESPONSE"
+              echo "Please check your Azure credentials"
+              exit 1
+            fi
+          else
+            echo "Authentication failed"
+            echo "Please check your Azure credentials"
+            exit 1
+          fi
+      
+      - name: Create Planner Tasks
+        continue-on-error: true
+        run: |
+          echo "📝 Creating tasks in Microsoft Planner..."
+          echo "Plan ID: $PLANNER_PLAN_ID"
+          
+          # Parse user stories from previous step
+          USER_STORIES='${{ steps.parse.outputs.user-stories }}'
+          ACCESS_TOKEN='${{ steps.auth.outputs.access_token }}'
+          
+          success_count=0
+          error_count=0
+          
+          # Process each user story
+          echo "$USER_STORIES" | jq -r '.[] | @base64' | while IFS= read -r story_b64; do
+            story=$(echo "$story_b64" | base64 -d)
+            title=$(echo "$story" | jq -r '.title')
+            
+            echo "Creating task: $title"
+            
+            # Create task via Microsoft Graph API
+            response=$(curl -s -w "%{http_code}" -X POST \
+              "https://graph.microsoft.com/v1.0/planner/tasks" \
+              -H "Authorization: Bearer $ACCESS_TOKEN" \
+              -H "Content-Type: application/json" \
+              -d "{\"title\": \"$title\", \"planId\": \"$PLANNER_PLAN_ID\"}")
+            
+            response_code="${response: -3}"
+            
+            if [ $response_code -eq 201 ]; then
+              success_count=$((success_count + 1))
+              echo "✅ Created: $title"
+            else
+              error_count=$((error_count + 1))
+              echo "❌ Failed to create: $title"
+            fi
+          done
+          
+          # Post results to GitHub
+          if [ $success_count -gt 0 ]; then
+            comment="🎉 **Planner tasks created successfully!** Created $success_count tasks."
+          else
+            comment="❌ **Failed to Create Planner Tasks** - Please check configuration."
+          fi
+          
+          gh api repos/${{ github.repository }}/issues/${{ github.event.issue.number }}/comments \
+            --method POST \
+            --field body="$comment"

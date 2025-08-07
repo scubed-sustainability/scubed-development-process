@@ -696,7 +696,7 @@ export class GitHubService {
                 const trimmed = line.trim();
 
                 // Extract title from first heading
-                if (trimmed.startsWith('# ') && !title.includes('Untitled')) {
+                if (trimmed.startsWith('# ') && title === 'Untitled Requirement') {
                     title = trimmed.substring(2);
                     continue;
                 }
